@@ -1,4 +1,4 @@
-# 🏥 MedCase Pro Platform
+# 🏥 MedCasePro Platform
 
 ## Tibbiyot Talabalari va Shifokorlar uchun Interaktiv Ta'lim Platformasi
 
