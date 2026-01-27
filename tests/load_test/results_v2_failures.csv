@@ -1,0 +1,5 @@
+Method,Name,Error,Occurrences
+POST,/api/v1/autentifikatsiya/royxatdan-otish,HTTPError('422 Client Error: Unprocessable Entity for url: /api/v1/autentifikatsiya/royxatdan-otish'),2000
+POST,/api/v1/autentifikatsiya/kirish,HTTPError('500 Server Error: Internal Server Error for url: /api/v1/autentifikatsiya/kirish'),482
+POST,/api/v1/autentifikatsiya/kirish,RemoteDisconnected('Remote end closed connection without response'),1433
+POST,/api/v1/autentifikatsiya/kirish,HTTPError('401 Client Error: Unauthorized for url: /api/v1/autentifikatsiya/kirish'),85

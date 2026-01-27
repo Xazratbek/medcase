@@ -1,0 +1,77 @@
+# MedCase Pro Platform - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Muhit o'zgaruvchilari
+.env
+.env.local
+.env.production
+
+# Ma'lumotlar bazasi
+*.db
+*.sqlite3
+
+# Loglar
+*.log
+logs/
+
+# Test
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Migratsiyalar (lokal)
+migratsiyalar/versiyalar/*.py
+!migratsiyalar/versiyalar/__init__.py
+
+# Statik va media
+static/
+media/
+uploads/
+
+# Cache
+.cache/
+*.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+*.tmp

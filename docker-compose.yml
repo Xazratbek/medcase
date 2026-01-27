@@ -1,0 +1,103 @@
+# MedCase Pro Platform - Docker Compose Konfiguratsiyasi
+# Lokal ishlab chiqish va sinov uchun
+
+version: '3.8'
+
+services:
+  # Asosiy ilova (Neon PostgreSQL bilan)
+  ilova:
+    build: .
+    container_name: medcase_ilova
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MUHIT=ishlab_chiqish
+      - DEBUG=True
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+
+  # Asosiy ilova (lokal PostgreSQL bilan) - ixtiyoriy
+  ilova_lokal:
+    build: .
+    container_name: medcase_ilova_lokal
+    ports:
+      - "8001:8000"
+    environment:
+      - MUHIT=ishlab_chiqish
+      - DEBUG=True
+      - MALUMOTLAR_BAZASI_URL=postgresql+asyncpg://medcase:medcase123@postgres:5432/medcase
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    profiles:
+      - lokal
+
+  # PostgreSQL ma'lumotlar bazasi (lokal uchun) - ixtiyoriy
+  postgres:
+    image: postgres:15-alpine
+    container_name: medcase_postgres
+    environment:
+      - POSTGRES_USER=medcase
+      - POSTGRES_PASSWORD=medcase123
+      - POSTGRES_DB=medcase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_malumotlar:/var/lib/postgresql/data
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    profiles:
+      - lokal
+
+  # Redis keshlash
+  redis:
+    image: redis:7-alpine
+    container_name: medcase_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_malumotlar:/data
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Nginx (ishlab chiqarish uchun)
+  nginx:
+    image: nginx:alpine
+    container_name: medcase_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - ilova
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    profiles:
+      - ishlab_chiqarish
+
+volumes:
+  postgres_malumotlar:
+  redis_malumotlar:
+
+networks:
+  medcase_tarmoq:
+    driver: bridge
