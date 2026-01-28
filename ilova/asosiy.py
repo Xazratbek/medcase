@@ -2,6 +2,8 @@
 # 2000-5000 concurrent users uchun optimallashtirilgan
 
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -31,28 +33,28 @@ async def hayot_sikli(app: FastAPI):
     """
     # Ishga tushish
     logger.info("MedCase Pro platformasi ishga tushmoqda...")
-    
+
     # Ma'lumotlar bazasiga ulanish
     await malumotlar_bazasi.ulanish()
     logger.info("Ma'lumotlar bazasiga ulandi")
-    
+
     # Redis'ga ulanish
     try:
         await redis_kesh.ulanish()
         logger.info("Redis serveriga ulandi")
     except Exception as e:
         logger.warning(f"Redis'ga ulanib bo'lmadi: {e}")
-    
+
     logger.info("MedCase Pro platformasi tayyor!")
-    
+
     yield
-    
+
     # Yopilish
     logger.info("MedCase Pro platformasi yopilmoqda...")
-    
+
     await malumotlar_bazasi.uzish()
     await redis_kesh.uzish()
-    
+
     logger.info("MedCase Pro platformasi yopildi")
 
 
@@ -69,9 +71,9 @@ def ilova_yaratish() -> FastAPI:
         openapi_url="/openapi.json" if sozlamalar.debug else None,
         lifespan=hayot_sikli
     )
-    
+
     # ============== Middleware ==============
-    
+
     # CORS
     app.add_middleware(
         CORSMiddleware,
@@ -80,53 +82,88 @@ def ilova_yaratish() -> FastAPI:
         allow_methods=sozlamalar.cors_metodlar_royxati,
         allow_headers=sozlamalar.cors_sarlavhalar_royxati
     )
-    
+
     # GZip siqish (javoblar uchun)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    
+
     # Rate Limiter
     app.state.limiter = rate_limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_xato_ishlovchi)
-    
+
     # ============== So'rov/Javob Middleware ==============
-    
+
     @app.middleware("http")
     async def sorov_vaqti_middleware(request: Request, call_next):
         """So'rov vaqtini o'lchaydi va log qiladi."""
         boshlash = time.time()
-        
+
         response = await call_next(request)
-        
+
         davomiylik = time.time() - boshlash
         response.headers["X-Javob-Vaqti"] = f"{davomiylik:.4f}"
-        
+
         # Sekin so'rovlarni log qilish
         if davomiylik > 1.0:
             logger.warning(
                 f"Sekin so'rov: {request.method} {request.url.path} - {davomiylik:.2f}s"
             )
-        
+
         return response
-    
+
     @app.middleware("http")
     async def xavfsizlik_sarlavhalari(request: Request, call_next):
         """Xavfsizlik sarlavhalarini qo'shadi."""
         response = await call_next(request)
-        
+
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        
+
         return response
-    
+
     # ============== Xato Ishlovchilari ==============
-    
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_xato_ishlovchi(request: Request, exc: RequestValidationError):
+        """Validation xatolarini ushlaydi va chiroyli javob qaytaradi."""
+        logger.warning(f"Validation xatosi: {exc.errors()}")
+
+        errors = []
+        for err in exc.errors():
+            # Pydantic xatolarida ba'zan serializatsiya bo'lmaydigan ob'ektlar bo'ladi (masalan ValueError)
+            cleaned_err = dict(err)
+            if "ctx" in cleaned_err:
+                cleaned_ctx = dict(cleaned_err["ctx"])
+                for k, v in cleaned_ctx.items():
+                    if isinstance(v, Exception):
+                        cleaned_ctx[k] = str(v)
+                cleaned_err["ctx"] = cleaned_ctx
+            errors.append(cleaned_err)
+
+        # Birinchi xatoni olish
+        xato_matni = "Ma'lumotlar noto'g'ri kiritilgan"
+        if errors:
+            error = errors[0]
+            field = " -> ".join([str(loc) for loc in error["loc"][1:]])
+            msg = error["msg"]
+            xato_matni = f"{field}: {msg}" if field else msg
+
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=jsonable_encoder({
+                "muvaffaqiyat": False,
+                "xato": xato_matni,
+                "xato_kodi": "VALIDATION_ERROR",
+                "tafsilotlar": errors
+            })
+        )
+
     @app.exception_handler(Exception)
     async def umumiy_xato_ishlovchi(request: Request, exc: Exception):
         """Barcha kutilmagan xatolarni ushlaydi."""
         logger.error(f"Kutilmagan xato: {exc}", exc_info=True)
-        
+
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -135,14 +172,14 @@ def ilova_yaratish() -> FastAPI:
                 "xato_kodi": "INTERNAL_ERROR"
             }
         )
-    
+
     # ============== Marshrutlar ==============
-    
+
     from marshrutlar import api_router
     app.include_router(api_router, prefix="/api/v1")
-    
+
     # ============== Sog'liqni Tekshirish ==============
-    
+
     @app.get("/", tags=["Tizim"])
     async def ildiz():
         """Asosiy endpoint - ilova ishlayotganini tekshirish."""
@@ -151,7 +188,7 @@ def ilova_yaratish() -> FastAPI:
             "versiya": sozlamalar.ilova_versiyasi,
             "holat": "ishlayapti"
         }
-    
+
     @app.get("/sogliq", tags=["Tizim"])
     async def sogliq_tekshiruvi():
         """Tizim sog'lig'ini tekshiradi."""
@@ -159,7 +196,7 @@ def ilova_yaratish() -> FastAPI:
             "holat": "soglom",
             "komponentlar": {}
         }
-        
+
         # Ma'lumotlar bazasi
         try:
             if malumotlar_bazasi.ulangan:
@@ -170,7 +207,7 @@ def ilova_yaratish() -> FastAPI:
         except:
             natija["komponentlar"]["malumotlar_bazasi"] = "xato"
             natija["holat"] = "nosoglom"
-        
+
         # Redis
         try:
             if await redis_kesh.mavjud("test"):
@@ -178,9 +215,9 @@ def ilova_yaratish() -> FastAPI:
             natija["komponentlar"]["redis"] = "soglom"
         except:
             natija["komponentlar"]["redis"] = "ulanmagan"
-        
+
         return natija
-    
+
     @app.get("/statistika", tags=["Tizim"])
     async def tizim_statistikasi():
         """Tizim statistikasini qaytaradi (admin uchun)."""
@@ -189,7 +226,7 @@ def ilova_yaratish() -> FastAPI:
             "debug": sozlamalar.debug,
             "versiya": sozlamalar.ilova_versiyasi
         }
-    
+
     return app
 
 

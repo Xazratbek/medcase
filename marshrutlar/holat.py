@@ -46,7 +46,7 @@ async def holatlar_royxati(
     Holatlar ro'yxatini qaytaradi. Filtrlar bilan qidirish mumkin.
     """
     servis = HolatServisi(db)
-    
+
     qidiruv_malumot = HolatQidirish(
         sahifa=sahifa,
         hajm=hajm,
@@ -55,12 +55,12 @@ async def holatlar_royxati(
         turi=turi,
         qidiruv=qidiruv
     )
-    
+
     foydalanuvchi_id = joriy_foydalanuvchi.id if joriy_foydalanuvchi else None
     holatlar, jami = await servis.qidirish(qidiruv_malumot, foydalanuvchi_id)
-    
+
     sahifalar_soni = (jami + hajm - 1) // hajm if hajm > 0 else 0
-    
+
     return HolatRoyxati(
         holatlar=holatlar,
         jami=jami,
@@ -109,9 +109,9 @@ async def bolim_holatlari(
     """
     servis = HolatServisi(db)
     holatlar, jami = await servis.bolim_boyicha(bolim_id, sahifa, hajm)
-    
+
     sahifalar_soni = (jami + hajm - 1) // hajm if hajm > 0 else 0
-    
+
     return HolatRoyxati(
         holatlar=holatlar,
         jami=jami,
@@ -151,10 +151,10 @@ async def kunlik_holat(
     from datetime import date
     from sozlamalar.redis_kesh import redis_kesh
     import json
-    
+
     bugun = date.today().isoformat()
     kesh_kaliti = f"kunlik_holat:{bugun}"
-    
+
     # Keshdan tekshirish
     keshdan = await redis_kesh.olish(kesh_kaliti)
     if keshdan:
@@ -163,29 +163,29 @@ async def kunlik_holat(
         holat = await servis.olish(UUID(holat_id))
         if holat:
             return holat
-    
+
     # Yangi kunlik holat tanlash (o'rtacha yoki qiyin)
     servis = HolatServisi(db)
     holatlar = await servis.tasodifiy_olish(
         soni=1,
         qiyinlik=None  # Barcha qiyinlikdan
     )
-    
+
     if not holatlar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Kunlik holat topilmadi. Holatlar mavjud emas."
         )
-    
+
     holat = holatlar[0]
-    
+
     # 24 soatga keshlash
     await redis_kesh.saqlash(
         kesh_kaliti,
         str(holat.id),
         muddati=86400  # 24 soat
     )
-    
+
     return holat
 
 
@@ -203,19 +203,19 @@ async def holat_olish(
     """
     servis = HolatServisi(db)
     holat = await servis.olish(holat_id)
-    
+
     if not holat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Holat topilmadi"
         )
-    
+
     if not holat.chop_etilgan:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bu holat hali chop etilmagan"
         )
-    
+
     return holat
 
 
@@ -238,13 +238,13 @@ async def javob_berish(
     # Holatni tekshirish
     holat_servis = HolatServisi(db)
     holat = await holat_servis.olish(holat_id)
-    
+
     if not holat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Holat topilmadi"
         )
-    
+
     # Urinish yaratish
     rivojlanish_servis = RivojlanishServisi(db)
     urinish_malumot = UrinishYaratish(
@@ -253,15 +253,15 @@ async def javob_berish(
         sarflangan_vaqt=sarflangan_vaqt,
         sessiya_id=sessiya_id
     )
-    
+
     urinish = await rivojlanish_servis.urinish_yaratish(
         joriy_foydalanuvchi.id,
         urinish_malumot
     )
-    
+
     # Holat statistikasini yangilash
     await holat_servis.statistika_yangilash(holat_id, urinish.togri)
-    
+
     # Reytingni yangilash (har 10 ta urinishdan keyin, yoki to'g'ri javobda)
     if urinish.togri:
         from servislar.gamifikatsiya_servisi import GamifikatsiyaServisi
@@ -270,7 +270,13 @@ async def javob_berish(
             await gam_servis.reyting_yangilash("global")
         except Exception:
             pass  # Reyting yangilash xatosi javobga ta'sir qilmasligi kerak
-    
+
+        except Exception:
+            pass  # Reyting yangilash xatosi javobga ta'sir qilmasligi kerak
+
+    # FIX: Frontend uchun to'g'ri javobni qo'shish
+    urinish.togri_javob = holat.togri_javob
+
     return urinish
 
 
@@ -290,18 +296,18 @@ async def holat_javoblari(
     """
     holat_servis = HolatServisi(db)
     holat = await holat_servis.olish(holat_id)
-    
+
     if not holat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Holat topilmadi"
         )
-    
+
     # Foydalanuvchi javob berganligini tekshirish
     rivojlanish_servis = RivojlanishServisi(db)
     from sqlalchemy import select, and_
     from modellar.rivojlanish import HolatUrinishi
-    
+
     sorov = select(HolatUrinishi).where(
         and_(
             HolatUrinishi.foydalanuvchi_id == joriy_foydalanuvchi.id,
@@ -310,13 +316,13 @@ async def holat_javoblari(
     )
     natija = await db.execute(sorov)
     urinish = natija.scalar_one_or_none()
-    
+
     if not urinish:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Avval holatga javob bering"
         )
-    
+
     return HolatToliqJavob(
         **holat.__dict__,
         togri_javob=holat.togri_javob,

@@ -27,12 +27,12 @@ const ITEMS_PER_PAGE = 20
 export default function Cases() {
   const [searchParams, setSearchParams] = useSearchParams()
   const bolimId = searchParams.get('bolim_id')
-  
+
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [section, setSection] = useState(null)
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
-  
+
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     difficulty: searchParams.get('qiyinlik') || '',
@@ -249,6 +249,7 @@ export default function Cases() {
               totalPages={pagination.pages}
               totalItems={pagination.total}
               onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+              loading={loading}
             />
           )}
         </>
@@ -266,22 +267,22 @@ export default function Cases() {
 }
 
 // Pagination komponenti
-function Pagination({ currentPage, totalPages, totalItems, onPageChange }) {
+function Pagination({ currentPage, totalPages, totalItems, onPageChange, loading }) {
   const getPageNumbers = () => {
     const pages = []
     const showPages = 5 // Ko'rsatiladigan sahifalar soni
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(showPages / 2))
     let endPage = Math.min(totalPages, startPage + showPages - 1)
-    
+
     if (endPage - startPage + 1 < showPages) {
       startPage = Math.max(1, endPage - showPages + 1)
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i)
     }
-    
+
     return pages
   }
 
@@ -289,31 +290,32 @@ function Pagination({ currentPage, totalPages, totalItems, onPageChange }) {
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
       {/* Info */}
       <p className="text-sm text-slate-500">
-        Jami <span className="font-medium text-white">{totalItems}</span> ta holat, 
+        Jami <span className="font-medium text-white">{totalItems}</span> ta holat,
         sahifa <span className="font-medium text-white">{currentPage}</span> / {totalPages}
       </p>
-      
+
       {/* Buttons */}
       <div className="flex items-center gap-1">
         {/* Oldingi */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || loading}
           className={`p-2 rounded-lg transition-colors ${
-            currentPage === 1
+            currentPage === 1 || loading
               ? 'text-slate-600 cursor-not-allowed'
               : 'text-slate-400 hover:bg-ocean-700 hover:text-white'
           }`}
         >
           <HiOutlineChevronLeft className="w-5 h-5" />
         </button>
-        
+
         {/* Birinchi sahifa */}
         {getPageNumbers()[0] > 1 && (
           <>
             <button
               onClick={() => onPageChange(1)}
-              className="w-10 h-10 rounded-lg font-medium bg-ocean-700/50 text-slate-400 hover:bg-ocean-700 transition-colors"
+              disabled={loading}
+              className="w-10 h-10 rounded-lg font-medium bg-ocean-700/50 text-slate-400 hover:bg-ocean-700 transition-colors disabled:opacity-50"
             >
               1
             </button>
@@ -322,13 +324,14 @@ function Pagination({ currentPage, totalPages, totalItems, onPageChange }) {
             )}
           </>
         )}
-        
+
         {/* Sahifalar */}
         {getPageNumbers().map((page) => (
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+            disabled={loading}
+            className={`w-10 h-10 rounded-lg font-medium transition-colors disabled:opacity-50 ${
               currentPage === page
                 ? 'bg-med-500 text-white shadow-lg shadow-med-500/30'
                 : 'bg-ocean-700/50 text-slate-400 hover:bg-ocean-700'
@@ -337,7 +340,7 @@ function Pagination({ currentPage, totalPages, totalItems, onPageChange }) {
             {page}
           </button>
         ))}
-        
+
         {/* Oxirgi sahifa */}
         {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
           <>
@@ -346,19 +349,20 @@ function Pagination({ currentPage, totalPages, totalItems, onPageChange }) {
             )}
             <button
               onClick={() => onPageChange(totalPages)}
-              className="w-10 h-10 rounded-lg font-medium bg-ocean-700/50 text-slate-400 hover:bg-ocean-700 transition-colors"
+              disabled={loading}
+              className="w-10 h-10 rounded-lg font-medium bg-ocean-700/50 text-slate-400 hover:bg-ocean-700 transition-colors disabled:opacity-50"
             >
               {totalPages}
             </button>
           </>
         )}
-        
+
         {/* Keyingi */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || loading}
           className={`p-2 rounded-lg transition-colors ${
-            currentPage === totalPages
+            currentPage === totalPages || loading
               ? 'text-slate-600 cursor-not-allowed'
               : 'text-slate-400 hover:bg-ocean-700 hover:text-white'
           }`}

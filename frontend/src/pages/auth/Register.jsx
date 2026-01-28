@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
-import { 
-  HiOutlineMail, 
-  HiOutlineLockClosed, 
-  HiOutlineEye, 
+import {
+  HiOutlineMail,
+  HiOutlineLockClosed,
+  HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineUser,
   HiOutlineIdentification,
@@ -36,25 +36,40 @@ export default function Register() {
     rol: 'talaba',
   })
 
+  const isPasswordSecure = (password) => {
+    return (
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password)
+    )
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (step === 1) {
       setStep(2)
       return
     }
-    
+
     if (formData.parol !== formData.parol_tasdiqlash) {
+      toast.error("Parollar mos kelmadi")
       return
     }
-    
+
+    if (!isPasswordSecure(formData.parol)) {
+      toast.error("Parol xavfsizlik talablariga javob bermaydi")
+      return
+    }
+
     setLoading(true)
     const result = await register(formData)
-    
+
     if (result.success) {
       navigate('/boshqaruv')
     }
-    
+
     setLoading(false)
   }
 
@@ -173,8 +188,8 @@ export default function Register() {
                     onClick={() => setFormData(prev => ({ ...prev, rol: role.value }))}
                     className={`
                       flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200
-                      ${formData.rol === role.value 
-                        ? 'border-med-500 bg-med-500/10' 
+                      ${formData.rol === role.value
+                        ? 'border-med-500 bg-med-500/10'
                         : 'border-white/10 bg-ocean-800/50 hover:border-white/20'
                       }
                     `}
@@ -219,19 +234,48 @@ export default function Register() {
                   {showPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
                 </button>
               </div>
-              
+
               {/* Password strength indicator */}
-              <div className="mt-2 flex gap-1">
-                {[1, 2, 3, 4].map((level) => (
-                  <div
-                    key={level}
-                    className={`h-1 flex-1 rounded-full transition-colors ${
-                      formData.parol.length >= level * 3
-                        ? level <= 2 ? 'bg-red-500' : level === 3 ? 'bg-yellow-500' : 'bg-green-500'
-                        : 'bg-ocean-700'
-                    }`}
-                  />
-                ))}
+              <div className="mt-2 space-y-2">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map((level) => {
+                    const strength =
+                      (formData.parol.length >= 8 ? 1 : 0) +
+                      (/[A-Z]/.test(formData.parol) ? 1 : 0) +
+                      (/[a-z]/.test(formData.parol) ? 1 : 0) +
+                      (/[0-9]/.test(formData.parol) ? 1 : 0);
+
+                    return (
+                      <div
+                        key={level}
+                        className={`h-1 flex-1 rounded-full transition-colors ${
+                          strength >= level
+                            ? strength <= 2 ? 'bg-red-500' : strength === 3 ? 'bg-yellow-500' : 'bg-green-500'
+                            : 'bg-ocean-700'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                  <div className={`flex items-center gap-1.5 ${formData.parol.length >= 8 ? 'text-green-400' : 'text-slate-500'}`}>
+                    <div className={`w-1 h-1 rounded-full ${formData.parol.length >= 8 ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    Kamida 8 ta belgi
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(formData.parol) ? 'text-green-400' : 'text-slate-500'}`}>
+                    <div className={`w-1 h-1 rounded-full ${/[A-Z]/.test(formData.parol) ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    Katta harf (A-Z)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[a-z]/.test(formData.parol) ? 'text-green-400' : 'text-slate-500'}`}>
+                    <div className={`w-1 h-1 rounded-full ${/[a-z]/.test(formData.parol) ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    Kichik harf (a-z)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[0-9]/.test(formData.parol) ? 'text-green-400' : 'text-slate-500'}`}>
+                    <div className={`w-1 h-1 rounded-full ${/[0-9]/.test(formData.parol) ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    Kamida 1 ta raqam
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -261,8 +305,8 @@ export default function Register() {
 
             {/* Terms */}
             <label className="flex items-start gap-3 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 required
                 className="mt-1 w-4 h-4 rounded border-white/20 bg-ocean-800 text-med-500 focus:ring-med-500/20"
               />
@@ -317,7 +361,7 @@ export default function Register() {
             <button
               type="button"
               className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl
-                         bg-white/5 border border-white/10 hover:bg-white/10 
+                         bg-white/5 border border-white/10 hover:bg-white/10
                          transition-all duration-200"
             >
               <FcGoogle className="w-5 h-5" />

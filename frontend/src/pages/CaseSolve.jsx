@@ -21,6 +21,7 @@ export default function CaseSolve() {
   const navigate = useNavigate()
   const [caseData, setCaseData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [selectedAnswer, setSelectedAnswer] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState(null)
@@ -44,14 +45,14 @@ export default function CaseSolve() {
       if (timerRef.current) {
         clearInterval(timerRef.current)
       }
-      
+
       // Yangi interval - aniq 1000ms (1 soniya)
       const intervalId = setInterval(() => {
         setTimer(prev => prev + 1)
       }, 1000)
-      
+
       timerRef.current = intervalId
-      
+
       return () => {
         clearInterval(intervalId)
         timerRef.current = null
@@ -78,6 +79,9 @@ export default function CaseSolve() {
       return
     }
 
+    if (submitting) return
+
+    setSubmitting(true)
     if (timerRef.current) clearInterval(timerRef.current)
 
     try {
@@ -104,6 +108,8 @@ export default function CaseSolve() {
       if (timerRef.current) {
         timerRef.current = setInterval(() => setTimer(prev => prev + 1), 1000)
       }
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -114,11 +120,11 @@ export default function CaseSolve() {
       if (caseData?.bolim_id) {
         params.bolim_id = caseData.bolim_id
       }
-      
+
       const response = await caseAPI.getRandomCases(params)
       const cases = response.data?.holatlar || response.data || []
       const nextCase = cases[0]
-      
+
       if (nextCase && nextCase.id !== id) {
         // Yangi holatga o'tish
         navigate(`/holat/${nextCase.id}`)
@@ -128,7 +134,7 @@ export default function CaseSolve() {
         const randomResponse = await caseAPI.getRandomCases({ soni: 1 })
         const randomCases = randomResponse.data?.holatlar || randomResponse.data || []
         const randomCase = randomCases[0]
-        
+
         if (randomCase && randomCase.id !== id) {
           navigate(`/holat/${randomCase.id}`)
         } else {
@@ -296,10 +302,17 @@ export default function CaseSolve() {
       {!submitted ? (
         <button
           onClick={handleSubmit}
-          disabled={!selectedAnswer}
-          className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!selectedAnswer || submitting}
+          className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Javobni yuborish
+          {submitting ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Yuborilmoqda...
+            </>
+          ) : (
+            "Javobni yuborish"
+          )}
         </button>
       ) : (
         <motion.div
@@ -361,7 +374,7 @@ export default function CaseSolve() {
                 className="glass-card p-6 overflow-hidden"
               >
                 <h4 className="font-display font-semibold mb-4">Tushuntirish</h4>
-                
+
                 {/* User's wrong answer explanation (if wrong) */}
                 {!result?.togri && selectedAnswer !== result?.togri_javob && (
                   <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
@@ -369,20 +382,20 @@ export default function CaseSolve() {
                       Sizning javobingiz: {selectedAnswer} - Noto'g'ri
                     </p>
                     <p className="text-slate-300">
-                      {caseData.variantlar?.find((v, i) => 
+                      {caseData.variantlar?.find((v, i) =>
                         String.fromCharCode(65 + i) === selectedAnswer
                       )?.tushuntirish || "Tushuntirish mavjud emas"}
                     </p>
                   </div>
                 )}
-                
+
                 {/* Correct answer explanation */}
                 <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
                   <p className="text-sm text-green-400 font-medium mb-2">
                     To'g'ri javob: {result?.togri_javob}
                   </p>
                   <p className="text-slate-300">
-                    {caseData.variantlar?.find((v, i) => 
+                    {caseData.variantlar?.find((v, i) =>
                       String.fromCharCode(65 + i) === result?.togri_javob
                     )?.tushuntirish || result?.tushuntirish || "Tushuntirish mavjud emas"}
                   </p>
@@ -398,7 +411,7 @@ export default function CaseSolve() {
             whileHover={{ scale: addedToRepeat ? 1 : 1.01 }}
             whileTap={{ scale: addedToRepeat ? 1 : 0.99 }}
             className={`w-full p-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 ${
-              addedToRepeat 
+              addedToRepeat
                 ? 'bg-violet-500/20 border border-violet-500/30 text-violet-400 cursor-default'
                 : 'bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/20 text-violet-300 hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/10'
             }`}
@@ -425,7 +438,7 @@ export default function CaseSolve() {
               <HiOutlineArrowLeft className="w-5 h-5" />
               Holatlarga qaytish
             </Link>
-            <button 
+            <button
               onClick={handleNextCase}
               className="btn-primary flex-1 py-4 flex items-center justify-center gap-2"
             >

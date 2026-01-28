@@ -35,29 +35,29 @@ class FoydalanuvchiYaratish(AsosiySchema):
         default=FoydalanuvchiRoli.TALABA,
         description="Foydalanuvchi roli"
     )
-    
+
     @field_validator("foydalanuvchi_nomi")
     @classmethod
     def foydalanuvchi_nomi_tekshirish(cls, v: str) -> str:
         """Foydalanuvchi nomini tekshirish."""
         if not re.match(r"^[a-zA-Z0-9_]+$", v):
             raise ValueError(
-                "Foydalanuvchi nomi faqat harflar, raqamlar va pastki chiziq bo'lishi mumkin"
+                "Foydalanuvchi nomi faqat lotin harflari, raqamlar va pastki chiziqdan iborat bo'lishi kerak"
             )
         return v.lower()
-    
+
     @field_validator("parol")
     @classmethod
     def parol_tekshirish(cls, v: str) -> str:
         """Parol murakkabligini tekshirish."""
         if not re.search(r"[A-Z]", v):
-            raise ValueError("Parolda kamida bitta katta harf bo'lishi kerak")
+            raise ValueError("Parolda kamida bitta katta harf (A-Z) bo'lishi kerak")
         if not re.search(r"[a-z]", v):
-            raise ValueError("Parolda kamida bitta kichik harf bo'lishi kerak")
+            raise ValueError("Parolda kamida bitta kichik harf (a-z) bo'lishi kerak")
         if not re.search(r"\d", v):
             raise ValueError("Parolda kamida bitta raqam bo'lishi kerak")
         return v
-    
+
     @field_validator("parol_tasdiqlash")
     @classmethod
     def parollar_mos(cls, v: str, info) -> str:
@@ -92,7 +92,7 @@ class ParolOzgartirish(AsosiySchema):
     joriy_parol: str = Field(..., description="Joriy parol")
     yangi_parol: str = Field(..., min_length=8, description="Yangi parol")
     yangi_parol_tasdiqlash: str = Field(..., description="Yangi parol tasdiqlash")
-    
+
     @field_validator("yangi_parol_tasdiqlash")
     @classmethod
     def parollar_mos(cls, v: str, info) -> str:
@@ -130,7 +130,7 @@ class FoydalanuvchiJavob(IDliSchema, VaqtBelgilariSchema):
     email_tasdiqlangan: bool = Field(..., description="Email tasdiqlangan")
     faol: bool = Field(..., description="Faol holat")
     oxirgi_kirish: Optional[datetime] = Field(None, description="Oxirgi kirish")
-    
+
     @property
     def toliq_ism(self) -> str:
         return f"{self.ism} {self.familiya}"

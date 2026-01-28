@@ -89,7 +89,7 @@ class MalumotlarBazasi:
             pool_size=pool_size,
             max_overflow=max_overflow,
             pool_recycle=pool_recycle,
-            pool_pre_ping=False,  # Tezlik uchun o'chirilgan
+            pool_pre_ping=True,  # FIX: Stale connectionlarni aniqlash uchun yoqildi
             pool_timeout=10,  # 10 soniya kutish
 
             # === Performance Sozlamalari ===

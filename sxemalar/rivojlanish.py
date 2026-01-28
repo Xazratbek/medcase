@@ -26,6 +26,7 @@ class UrinishJavob(IDliSchema, VaqtBelgilariSchema):
     sessiya_id: Optional[UUID] = None
     tanlangan_javob: str
     togri: bool
+    togri_javob: Optional[str] = None  # FIX: Frontendga to'g'ri javobni yuborish
     sarflangan_vaqt: int
     boshlangan_vaqt: datetime
     tugallangan_vaqt: datetime
@@ -85,7 +86,7 @@ class KunlikStatistikaJavob(IDliSchema):
     oson_yechilgan: int = 0
     ortacha_yechilgan: int = 0
     qiyin_yechilgan: int = 0
-    
+
     @property
     def aniqlik_foizi(self) -> float:
         if self.yechilgan_holatlar == 0:
@@ -141,7 +142,7 @@ class BolimRivojlanishiJavob(IDliSchema):
     jami_vaqt: int = 0
     tugallangan: bool = False
     tugallangan_vaqt: Optional[datetime] = None
-    
+
     @property
     def tugallash_foizi(self) -> float:
         if self.jami_holatlar == 0:
@@ -170,17 +171,17 @@ class DashboardStatistika(AsosiySchema):
     ortacha_aniqlik: float = 0.0
     eng_kop_yechilgan_kategoriya: Optional[str] = None
     eng_kam_yechilgan_kategoriya: Optional[str] = None
-    
+
     # Streak
     joriy_streak: int = 0
-    
+
     # Kunlik maqsad
     bugungi_holatlar: int = 0
     kunlik_maqsad: int = 10
-    
+
     # Oxirgi faollik
     oxirgi_urinishlar: List[UrinishJavob] = []
-    
+
     # Tavsiyalar
     tavsiya_etilgan_bolimlar: List[str] = []
 

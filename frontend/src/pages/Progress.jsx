@@ -28,14 +28,14 @@ export default function Progress() {
       // Davr bo'yicha kunlar soni
       const kunlarMap = { hafta: 7, oy: 30, yil: 365 }
       const kunlar = kunlarMap[period] || 7
-      
+
       const [statsRes, historyRes, categoryRes, calendarRes] = await Promise.all([
         progressAPI.getOverview(),
         progressAPI.getDailyStats({ kunlar }),
         progressAPI.getCategoryStats(),
         progressAPI.getDailyStats({ kunlar: 35 }) // Kalendar uchun 35 kun
       ])
-      
+
       // Stats - rivojlanish ma'lumotlari
       const statsData = statsRes.data
       setStats({
@@ -46,8 +46,8 @@ export default function Progress() {
         eng_uzun_streak: statsData.eng_uzun_streak || 0,
         daraja: statsData.daraja || 1,
         jami_ball: statsData.jami_ball || 0,
-        jami_vaqt: statsData.jami_vaqt || 0,
-        ortacha_vaqt: statsData.ortacha_vaqt || 0,
+        jami_vaqt: Math.round((statsData.jami_vaqt || 0) / 60),
+        ortacha_vaqt: Math.round((statsData.ortacha_vaqt || 0) / 60),
         togri_javoblar: statsData.togri_javoblar || 0,
         notogri_javoblar: statsData.notogri_javoblar || 0,
         oson_yechilgan: statsData.oson_yechilgan || 0,
@@ -57,7 +57,7 @@ export default function Progress() {
         qiyin_yechilgan: statsData.qiyin_yechilgan || 0,
         qiyin_togri: statsData.qiyin_togri || 0
       })
-      
+
       // History - kunlik statistikalar (grafik uchun)
       const historyData = historyRes.data || []
       const formattedHistory = historyData.map(item => ({
@@ -70,10 +70,10 @@ export default function Progress() {
         ball: item.olingan_ball || 0
       })).reverse() // Eski -> yangi tartibda
       setHistory(formattedHistory)
-      
+
       // Category stats
       setCategoryStats(categoryRes.data || [])
-      
+
       // Calendar data
       setCalendarData(calendarRes.data || [])
     } catch (error) {
@@ -180,15 +180,15 @@ export default function Progress() {
                     <stop offset="95%" stopColor="#14b89c" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis 
-                  dataKey="kun" 
-                  stroke="#64748b" 
+                <XAxis
+                  dataKey="kun"
+                  stroke="#64748b"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis 
-                  stroke="#64748b" 
+                <YAxis
+                  stroke="#64748b"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
@@ -230,15 +230,15 @@ export default function Progress() {
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis 
-                  dataKey="kun" 
-                  stroke="#64748b" 
+                <XAxis
+                  dataKey="kun"
+                  stroke="#64748b"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis 
-                  stroke="#64748b" 
+                <YAxis
+                  stroke="#64748b"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
@@ -273,10 +273,10 @@ export default function Progress() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={categoryStats} layout="vertical">
               <XAxis type="number" stroke="#64748b" fontSize={12} domain={[0, 100]} />
-              <YAxis 
-                type="category" 
-                dataKey="kategoriya" 
-                stroke="#64748b" 
+              <YAxis
+                type="category"
+                dataKey="kategoriya"
+                stroke="#64748b"
                 fontSize={12}
                 width={120}
                 tickLine={false}
@@ -289,9 +289,9 @@ export default function Progress() {
                 }}
                 formatter={(value) => [`${value}%`, 'Aniqlik']}
               />
-              <Bar 
-                dataKey="aniqlik" 
-                fill="#14b89c" 
+              <Bar
+                dataKey="aniqlik"
+                fill="#14b89c"
                 radius={[0, 4, 4, 0]}
                 barSize={24}
               />
@@ -337,7 +337,8 @@ function StatCard({ icon: Icon, label, value, subtext, trend, color }) {
 function formatTime(minutes) {
   if (minutes < 60) return `${minutes} daq`
   const hours = Math.floor(minutes / 60)
-  return `${hours} soat`
+  const remainder = minutes % 60
+  return remainder > 0 ? `${hours} soat ${remainder} daq` : `${hours} soat`
 }
 
 // Faoliyat kalendari komponenti - Real ma'lumotlar bilan
@@ -346,7 +347,7 @@ function ActivityCalendar({ calendarData }) {
   const calendarDays = useMemo(() => {
     const days = []
     const today = new Date()
-    
+
     // Kalendar uchun ma'lumotlarni map qilib olish
     const dataMap = {}
     if (Array.isArray(calendarData)) {
@@ -363,15 +364,15 @@ function ActivityCalendar({ calendarData }) {
         }
       })
     }
-    
+
     // 35 kunni orqaga hisoblash
     for (let i = 34; i >= 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
       const dateKey = date.toISOString().split('T')[0]
-      
+
       const data = dataMap[dateKey] || null
-      
+
       days.push({
         date: date,
         dateKey: dateKey,
@@ -380,15 +381,15 @@ function ActivityCalendar({ calendarData }) {
         data: data
       })
     }
-    
+
     // Hafta boshidan to'ldirish (birinchi kun dushanba bo'lishi uchun)
     const firstDayOfWeek = days[0].date.getDay()
     const paddingDays = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
-    
+
     for (let i = 0; i < paddingDays; i++) {
       days.unshift({ empty: true })
     }
-    
+
     return days
   }, [calendarData])
 
@@ -444,7 +445,7 @@ function ActivityCalendar({ calendarData }) {
           </span>
         </div>
       </div>
-      
+
       {/* Hafta kunlari */}
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2">
         {['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'].map(day => (
@@ -453,17 +454,17 @@ function ActivityCalendar({ calendarData }) {
           </div>
         ))}
       </div>
-      
+
       {/* Kalendar */}
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {calendarDays.map((day, i) => {
           if (day.empty) {
             return <div key={`empty-${i}`} className="aspect-square" />
           }
-          
+
           const level = getActivityLevel(day.data)
           const colorClass = getActivityColor(level)
-          
+
           return (
             <div
               key={day.dateKey}
@@ -477,7 +478,7 @@ function ActivityCalendar({ calendarData }) {
             >
               {/* Tooltip */}
               <div className="
-                absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
+                absolute bottom-full left-1/2 -translate-x-1/2 mb-2
                 opacity-0 group-hover:opacity-100 pointer-events-none
                 transition-opacity duration-200 z-20
               ">
@@ -505,7 +506,7 @@ function ActivityCalendar({ calendarData }) {
           )
         })}
       </div>
-      
+
       {/* Legend */}
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
         <div className="flex items-center gap-2">
@@ -518,7 +519,7 @@ function ActivityCalendar({ calendarData }) {
             <div className="w-3 h-3 rounded bg-med-500" title="10+ holat" />
           </div>
         </div>
-        
+
         {totalStats.holatlar === 0 && (
           <p className="text-xs text-slate-500 italic">
             Hali faoliyat yo'q. Holatlarni yechib boshlang!

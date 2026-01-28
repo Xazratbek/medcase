@@ -423,7 +423,7 @@ class FoydalanuvchiServisi(AsosiyServis[Foydalanuvchi]):
             "rivojlanish": {
                 "daraja": f.rivojlanish.daraja if f.rivojlanish else 1,
                 "jami_ball": f.rivojlanish.jami_ball if f.rivojlanish else 0,
-                "jami_yechilgan": f.rivojlanish.jami_yechilgan if f.rivojlanish else 0,
+                "jami_yechilgan": getattr(f.rivojlanish, 'jami_urinishlar', 0) if f.rivojlanish else 0,
                 "togri_javoblar": f.rivojlanish.togri_javoblar if f.rivojlanish else 0,
                 "joriy_streak": f.rivojlanish.joriy_streak if f.rivojlanish else 0,
             } if f.rivojlanish else None

@@ -83,7 +83,7 @@ function ExamCard({ exam }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
             <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
-              passed 
+              passed
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 : 'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}>
@@ -91,9 +91,9 @@ function ExamCard({ exam }) {
             </span>
             <span className="text-xs text-slate-500 capitalize">{exam.turi}</span>
           </div>
-          
+
           <h3 className="font-semibold text-white truncate">{exam.nom}</h3>
-          
+
           <div className="flex items-center gap-4 mt-3 text-sm text-slate-400">
             <span className="flex items-center gap-1.5">
               <HiOutlineCalendar className="w-4 h-4" />
@@ -158,12 +158,13 @@ export default function ExamHistory() {
   }, [page])
 
   const loadData = async () => {
+    setLoading(true)
     try {
       const [examsRes, statsRes] = await Promise.all([
         imtihonAPI.getMyExams({ sahifa: page, hajm: 10 }),
         imtihonAPI.getMyStats()
       ])
-      
+
       setExams(examsRes.data.imtihonlar || [])
       setTotal(examsRes.data.jami || 0)
       setStats(statsRes.data)
@@ -197,7 +198,7 @@ export default function ExamHistory() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600
                           flex items-center justify-center shadow-lg shadow-rose-500/25">
             <HiOutlineChartBar className="w-6 h-6 text-white" />
           </div>
@@ -206,7 +207,7 @@ export default function ExamHistory() {
             <p className="text-slate-400">Barcha imtihon natijalaringiz</p>
           </div>
         </div>
-        
+
         <Link to="/imtihon" className="btn-primary flex items-center gap-2">
           <HiOutlinePlay className="w-5 h-5" />
           <span className="hidden sm:inline">Yangi imtihon</span>
@@ -275,7 +276,7 @@ export default function ExamHistory() {
         <div className="flex items-center justify-center gap-2 mt-8">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
+            disabled={page === 1 || loading}
             className="px-4 py-2 rounded-lg bg-ocean-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ocean-700 transition-colors"
           >
             Oldingi
@@ -285,7 +286,7 @@ export default function ExamHistory() {
           </span>
           <button
             onClick={() => setPage(p => p + 1)}
-            disabled={page >= Math.ceil(total / 10)}
+            disabled={page >= Math.ceil(total / 10) || loading}
             className="px-4 py-2 rounded-lg bg-ocean-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ocean-700 transition-colors"
           >
             Keyingi
