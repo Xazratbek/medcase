@@ -51,7 +51,8 @@ from modellar.obuna import (
 from modellar.bildirishnoma import (
     Bildirishnoma,
     BildirishnomaTuri,
-    BildirishnomaSozlamalari
+    BildirishnomaSozlamalari,
+    PushObuna
 )
 from modellar.izoh import (
     HolatIzohi,
@@ -117,6 +118,7 @@ __all__ = [
     "Bildirishnoma",
     "BildirishnomaTuri",
     "BildirishnomaSozlamalari",
+    "PushObuna",
     # Izoh
     "HolatIzohi",
     "IzohYoqtirishi",

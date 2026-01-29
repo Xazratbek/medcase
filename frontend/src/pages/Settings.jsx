@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../store/authStore'
 import { userAPI } from '../utils/api'
+import { ensurePushSubscription, removePushSubscription } from '../utils/push'
 import {
   HiOutlineCog,
   HiOutlineBell,
@@ -42,6 +43,7 @@ export default function Settings() {
     push_streak: true,
     push_eslatma: true,
     push_reyting: false,
+    push_yangi_kontent: true,
     // Ilova ichidagi
     ilova_yutuqlar: true,
     ilova_streak: true,
@@ -76,7 +78,7 @@ export default function Settings() {
       const response = await userAPI.getNotificationSettings()
       const data = response.data
       if (data) {
-        setNotifications({
+        const next = {
           email_yutuqlar: data.email_yutuqlar ?? true,
           email_streak: data.email_streak ?? true,
           email_yangi_kontent: data.email_yangi_kontent ?? false,
@@ -85,6 +87,7 @@ export default function Settings() {
           push_streak: data.push_streak ?? true,
           push_eslatma: data.push_eslatma ?? true,
           push_reyting: data.push_reyting ?? false,
+          push_yangi_kontent: data.push_yangi_kontent ?? true,
           ilova_yutuqlar: data.ilova_yutuqlar ?? true,
           ilova_streak: data.ilova_streak ?? true,
           ilova_yangi_kontent: data.ilova_yangi_kontent ?? true,
@@ -92,7 +95,12 @@ export default function Settings() {
           sokin_rejim: data.sokin_rejim ?? false,
           sokin_boshlanish: data.sokin_boshlanish ?? '22:00',
           sokin_tugash: data.sokin_tugash ?? '07:00',
-        })
+        }
+        setNotifications(next)
+        const pushKeys = ['push_yutuqlar', 'push_streak', 'push_eslatma', 'push_reyting', 'push_yangi_kontent']
+        if (pushKeys.some((k) => next[k])) {
+          ensurePushSubscription().catch(() => {})
+        }
         if (data.eslatma_vaqtlari) {
           setEslatmaVaqtlari(data.eslatma_vaqtlari)
         }
@@ -109,6 +117,17 @@ export default function Settings() {
     setNotifications(prev => ({ ...prev, [key]: newValue }))
     
     try {
+      const pushKeys = ['push_yutuqlar', 'push_streak', 'push_eslatma', 'push_reyting', 'push_yangi_kontent']
+      if (pushKeys.includes(key) && newValue) {
+        await ensurePushSubscription()
+      }
+      if (pushKeys.includes(key) && !newValue) {
+        const anyPushEnabled = pushKeys.some((k) => (k === key ? false : notifications[k]))
+        if (!anyPushEnabled) {
+          await removePushSubscription()
+        }
+      }
+
       await userAPI.updateNotificationSettings({ [key]: newValue })
       toast.success("Saqlandi", { duration: 1500 })
     } catch (error) {
@@ -300,6 +319,12 @@ export default function Settings() {
                         description="Belgilangan vaqtda eslatma olish"
                         checked={notifications.push_eslatma}
                         onChange={() => handleNotificationChange('push_eslatma')}
+                      />
+                      <ToggleSetting
+                        label="Yangi kontent"
+                        description="Yangi holatlar qo'shilganda"
+                        checked={notifications.push_yangi_kontent}
+                        onChange={() => handleNotificationChange('push_yangi_kontent')}
                       />
                       <ToggleSetting
                         label="Reyting yangilanishi"

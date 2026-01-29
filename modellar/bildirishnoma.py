@@ -119,6 +119,7 @@ class BildirishnomaSozlamalari(AsosiyModel):
     push_streak = Column(Boolean, default=True, nullable=False)
     push_eslatma = Column(Boolean, default=True, nullable=False)
     push_reyting = Column(Boolean, default=True, nullable=False)
+    push_yangi_kontent = Column(Boolean, default=True, nullable=False)
     
     # Ilova ichidagi bildirishnomalar
     ilova_yutuqlar = Column(Boolean, default=True, nullable=False)
@@ -138,3 +139,32 @@ class BildirishnomaSozlamalari(AsosiyModel):
     sokin_rejim = Column(Boolean, default=False, nullable=False)
     sokin_boshlanish = Column(String(5), default="22:00", nullable=False)
     sokin_tugash = Column(String(5), default="08:00", nullable=False)
+
+
+class PushObuna(AsosiyModel):
+    """Web Push obunasi."""
+    __tablename__ = "push_obunalar"
+
+    foydalanuvchi_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("foydalanuvchilar.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="Foydalanuvchi ID"
+    )
+    endpoint = Column(
+        String(1024),
+        nullable=False,
+        unique=True,
+        comment="Push endpoint"
+    )
+    p256dh = Column(String(255), nullable=False)
+    auth = Column(String(255), nullable=False)
+    content_encoding = Column(String(20), default="aesgcm", nullable=False)
+    user_agent = Column(String(255), nullable=True)
+
+    foydalanuvchi = relationship("Foydalanuvchi", back_populates="push_obunalar")
+
+    __table_args__ = (
+        Index("idx_push_obuna_foyd", "foydalanuvchi_id"),
+    )

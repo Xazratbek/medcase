@@ -7,7 +7,9 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from sozlamalar.malumotlar_bazasi import sessiya_olish
+from sozlamalar.sozlamalar import sozlamalar as app_sozlamalar
 from servislar.bildirishnoma_servisi import BildirishnomServisi
+from servislar.push_servisi import PushServisi
 from sxemalar.asosiy import MuvaffaqiyatJavob
 from middleware.autentifikatsiya import joriy_foydalanuvchi_olish
 from modellar.foydalanuvchi import Foydalanuvchi
@@ -30,6 +32,7 @@ class BildirishnomaSozlamalarYangilash(BaseModel):
     push_streak: Optional[bool] = None
     push_eslatma: Optional[bool] = None
     push_reyting: Optional[bool] = None
+    push_yangi_kontent: Optional[bool] = None
     
     # Ilova ichidagi bildirishnomalar
     ilova_yutuqlar: Optional[bool] = None
@@ -48,6 +51,14 @@ class EslatmaVaqtlari(BaseModel):
     soat: int = 9
     daqiqa: int = 0
     kunlar: List[int] = [1, 2, 3, 4, 5]  # 1=Dush, 7=Yak
+
+
+class PushObunaSo'rovi(BaseModel):
+    """Push obuna ma'lumotlari."""
+    endpoint: str
+    keys: dict
+    content_encoding: Optional[str] = "aesgcm"
+    user_agent: Optional[str] = None
 
 
 @router.get("/", summary="Bildirishnomalar ro'yxati")
@@ -132,6 +143,7 @@ async def sozlamalar_olish(
         "push_streak": sozlamalar.push_streak,
         "push_eslatma": sozlamalar.push_eslatma,
         "push_reyting": sozlamalar.push_reyting,
+        "push_yangi_kontent": sozlamalar.push_yangi_kontent,
         "ilova_yutuqlar": sozlamalar.ilova_yutuqlar,
         "ilova_streak": sozlamalar.ilova_streak,
         "ilova_yangi_kontent": sozlamalar.ilova_yangi_kontent,
@@ -177,6 +189,7 @@ async def sozlamalar_yangilash(
             "push_streak": sozlamalar.push_streak,
             "push_eslatma": sozlamalar.push_eslatma,
             "push_reyting": sozlamalar.push_reyting,
+            "push_yangi_kontent": sozlamalar.push_yangi_kontent,
             "ilova_yutuqlar": sozlamalar.ilova_yutuqlar,
             "ilova_streak": sozlamalar.ilova_streak,
             "ilova_yangi_kontent": sozlamalar.ilova_yangi_kontent,
@@ -212,3 +225,59 @@ async def eslatma_vaqtlari_yangilash(
         "xabar": "Eslatma vaqtlari yangilandi",
         "eslatma_vaqtlari": sozlamalar.eslatma_vaqtlari
     }
+
+
+# ============== Push obuna ==============
+
+@router.get("/push/vapid", summary="VAPID public key")
+async def vapid_public_key():
+    """Frontend uchun VAPID public key."""
+    if not app_sozlamalar.vapid_public_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="VAPID public key sozlanmagan"
+        )
+    return {"public_key": app_sozlamalar.vapid_public_key}
+
+
+@router.post("/push/subscribe", summary="Push obuna yaratish/yangilash")
+async def push_subscribe(
+    malumot: PushObunaSo'rovi,
+    joriy_foydalanuvchi: Foydalanuvchi = Depends(joriy_foydalanuvchi_olish),
+    db: AsyncSession = Depends(sessiya_olish)
+):
+    """Browser push obunasini saqlaydi."""
+    if not app_sozlamalar.vapid_public_key or not app_sozlamalar.vapid_private_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="VAPID kalitlari sozlanmagan"
+        )
+
+    keys = malumot.keys or {}
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+    if not p256dh or not auth:
+        raise HTTPException(status_code=400, detail="Push keys noto'g'ri")
+
+    servis = PushServisi(db)
+    obuna = await servis.obuna_saqlash(
+        foydalanuvchi_id=joriy_foydalanuvchi.id,
+        endpoint=malumot.endpoint,
+        p256dh=p256dh,
+        auth=auth,
+        content_encoding=malumot.content_encoding or "aesgcm",
+        user_agent=malumot.user_agent
+    )
+    return {"xabar": "Obuna saqlandi", "id": str(obuna.id)}
+
+
+@router.post("/push/unsubscribe", summary="Push obunani o'chirish")
+async def push_unsubscribe(
+    malumot: PushObunaSo'rovi,
+    joriy_foydalanuvchi: Foydalanuvchi = Depends(joriy_foydalanuvchi_olish),
+    db: AsyncSession = Depends(sessiya_olish)
+):
+    """Push obunani o'chiradi (endpoint bo'yicha)."""
+    servis = PushServisi(db)
+    ok = await servis.obunani_ochirish(malumot.endpoint, joriy_foydalanuvchi.id)
+    return {"xabar": "Obuna o'chirildi" if ok else "Obuna topilmadi"}

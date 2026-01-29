@@ -144,6 +144,11 @@ class Foydalanuvchi(AsosiyModel):
         back_populates="foydalanuvchi",
         cascade="all, delete-orphan"
     )
+    push_obunalar = relationship(
+        "PushObuna",
+        back_populates="foydalanuvchi",
+        cascade="all, delete-orphan"
+    )
     izohlar = relationship(
         "HolatIzohi",
         back_populates="foydalanuvchi",

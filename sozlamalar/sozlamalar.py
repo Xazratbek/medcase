@@ -105,6 +105,13 @@ class Sozlamalar(BaseSettings):
     # =====================================================
     log_darajasi: str = Field(default="INFO", alias="LOG_DARAJASI")
     log_formati: str = Field(default="json", alias="LOG_FORMATI")
+
+    # =====================================================
+    # WEB PUSH (VAPID)
+    # =====================================================
+    vapid_public_key: Optional[str] = Field(default=None, alias="VAPID_PUBLIC_KEY")
+    vapid_private_key: Optional[str] = Field(default=None, alias="VAPID_PRIVATE_KEY")
+    vapid_subject: str = Field(default="mailto:admin@medcasepro.uz", alias="VAPID_SUBJECT")
     
     # =====================================================
     # SENTRY

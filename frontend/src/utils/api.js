@@ -138,6 +138,15 @@ export const notificationAPI = {
   markAsRead: (id) => api.post(`/bildirishnoma/${id}/oqilgan`),
   markAllAsRead: () => api.post('/bildirishnoma/hammasi-oqilgan'),
   getUnreadCount: () => api.get('/bildirishnoma/oqilmagan-soni'),
+  getVapidKey: () => api.get('/bildirishnoma/push/vapid'),
+  subscribePush: (subscription, userAgent) => {
+    const payload = subscription?.toJSON ? subscription.toJSON() : subscription
+    return api.post('/bildirishnoma/push/subscribe', { ...payload, user_agent: userAgent })
+  },
+  unsubscribePush: (subscription, userAgent) => {
+    const payload = subscription?.toJSON ? subscription.toJSON() : subscription
+    return api.post('/bildirishnoma/push/unsubscribe', { ...payload, user_agent: userAgent })
+  },
 }
 
 // Izoh (Forum/Comments) API

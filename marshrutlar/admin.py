@@ -89,6 +89,13 @@ async def holat_yaratish(
         matn=f"'{holat.sarlavha}' nomli yangi klinik holat platformaga qo'shildi. Hozir ko'rib chiqing!",
         havola=f"/holat/{holat.id}"
     )
+
+    # Push notification (background)
+    try:
+        from vositalar.tasks import yangi_holat_push
+        yangi_holat_push.delay(str(holat.id), holat.sarlavha)
+    except Exception:
+        pass
     
     return holat
 

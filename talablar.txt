@@ -61,6 +61,7 @@ slowapi==0.1.9
 # Background tasks
 celery==5.3.4
 flower==2.0.1
+pywebpush==1.14.0
 
 # Email
 aiosmtplib==3.0.1

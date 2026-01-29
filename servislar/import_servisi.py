@@ -73,6 +73,40 @@ class ImportServisi:
         'qiyin': QiyinlikDarajasi.QIYIN,
         'hard': QiyinlikDarajasi.QIYIN,
     }
+
+    def _variantlarni_aralashtirish(self, holat_data: Dict[str, Any]) -> None:
+        """
+        Agar to'g'ri javob doim B bo'lsa, variantlarni deterministik aylantiradi.
+        Shu bilan to'g'ri javob har doim bir xil harfda qolib ketmaydi.
+        """
+        if holat_data.get("correct") != "B":
+            return
+
+        qator = holat_data.get("qator") or 0
+        offset = qator % 4
+        if offset == 0:
+            offset = 1
+
+        options = [
+            holat_data.get("opt_a"),
+            holat_data.get("opt_b"),
+            holat_data.get("opt_c"),
+            holat_data.get("opt_d"),
+        ]
+        expls = [
+            holat_data.get("expl_a"),
+            holat_data.get("expl_b"),
+            holat_data.get("expl_c"),
+            holat_data.get("expl_d"),
+        ]
+
+        options = options[offset:] + options[:offset]
+        expls = expls[offset:] + expls[:offset]
+
+        letters = ["A", "B", "C", "D"]
+        holat_data["correct"] = letters[(1 - offset) % 4]
+        holat_data["opt_a"], holat_data["opt_b"], holat_data["opt_c"], holat_data["opt_d"] = options
+        holat_data["expl_a"], holat_data["expl_b"], holat_data["expl_c"], holat_data["expl_d"] = expls
     
     async def excel_tahlil_qilish(self, fayl_content: bytes) -> Dict[str, Any]:
         """
@@ -239,6 +273,9 @@ class ImportServisi:
                         "qiyinlik": qiyinlik,
                         "link": str(link).strip() if link else None
                     })
+
+                    # Agar barcha to'g'ri javoblar B bo'lsa, variantlarni aylantirish
+                    self._variantlarni_aralashtirish(holatlar[-1])
             
             return {
                 "muvaffaqiyat": len(self.xatolar) == 0,
@@ -307,6 +344,8 @@ class ImportServisi:
         
         for idx, holat_data in enumerate(holatlar):
             try:
+                # Import vaqtida ham variantlarni tekshirish (xavfsizlik uchun)
+                self._variantlarni_aralashtirish(holat_data)
                 # Ma'lumotlarni normallashtirish
                 main_cat_raw = holat_data['main_category']
                 sub_cat_raw = holat_data['sub_category']
