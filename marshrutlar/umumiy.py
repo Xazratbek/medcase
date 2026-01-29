@@ -7,6 +7,7 @@ from sozlamalar.malumotlar_bazasi import sessiya_olish
 from servislar.kategoriya_servisi import KategoriyaServisi
 from servislar.foydalanuvchi_servisi import FoydalanuvchiServisi
 from servislar.holat_servisi import HolatServisi
+from sozlamalar.redis_kesh import redis_kesh, KeshKalitlari
 
 router = APIRouter()
 
@@ -16,6 +17,11 @@ async def get_landing_data(db: AsyncSession = Depends(sessiya_olish)):
     """
     Landing page uchun kerakli ma'lumotlarni qaytaradi.
     """
+    kesh_kalit = f"{KeshKalitlari.STATISTIKA}:landing_data"
+    keshlangan = await redis_kesh.olish(kesh_kalit)
+    if keshlangan:
+        return keshlangan
+
     kategoriya_servisi = KategoriyaServisi(db)
     foydalanuvchi_servisi = FoydalanuvchiServisi(db)
     holat_servisi = HolatServisi(db)
@@ -72,8 +78,10 @@ async def get_landing_data(db: AsyncSession = Depends(sessiya_olish)):
         for kat in eng_kop_holatli_kategoriyalar
     ]
 
-    return {
+    natija = {
         "features": features,
         "stats": stats,
         "categories": categories,
     }
+    await redis_kesh.saqlash(kesh_kalit, natija, muddati=300)
+    return natija

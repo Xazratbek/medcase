@@ -12,6 +12,12 @@ services:
       - MUHIT=ishlab_chiqarish
       - DEBUG=False
       - REDIS_URL=redis://redis:6379/0
+      - GUNICORN_WORKERS=4
+      - GUNICORN_THREADS=2
+      - GUNICORN_TIMEOUT=120
+      - GUNICORN_KEEPALIVE=5
+      - GUNICORN_MAX_REQUESTS=1000
+      - GUNICORN_MAX_REQUESTS_JITTER=50
     depends_on:
       - redis
     networks:

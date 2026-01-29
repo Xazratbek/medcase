@@ -31,11 +31,12 @@ class RedisKesh:
             self._pool = redis.ConnectionPool.from_url(
                 sozlamalar.redis_url,
                 password=sozlamalar.redis_parol,
-                max_connections=50,
+                max_connections=100,
                 decode_responses=True,
                 socket_timeout=5,
                 socket_connect_timeout=5,
                 retry_on_timeout=True,
+                socket_keepalive=True,
             )
             
             self._redis = redis.Redis(connection_pool=self._pool)

@@ -26,6 +26,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Ilova kodini nusxalash
 COPY . .
 
+# Ishlab chiqarish skriptini ishga tushirish uchun
+RUN chmod +x ishlab_chiqarish.sh
+
 # Port
 EXPOSE 8000
 
@@ -34,13 +37,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/sogliq || exit 1
 
 # Ishga tushirish
-CMD ["gunicorn", "ilova.asosiy:ilova", \
-    "-w", "4", \
-    "-k", "uvicorn.workers.UvicornWorker", \
-    "-b", "0.0.0.0:8000", \
-    "--timeout", "120", \
-    "--keep-alive", "5", \
-    "--max-requests", "1000", \
-    "--max-requests-jitter", "50", \
-    "--access-logfile", "-", \
-    "--error-logfile", "-"]
+CMD ["./ishlab_chiqarish.sh"]

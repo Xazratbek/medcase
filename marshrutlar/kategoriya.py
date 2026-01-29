@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sozlamalar.malumotlar_bazasi import sessiya_olish
 from servislar.kategoriya_servisi import KategoriyaServisi
+from sozlamalar.redis_kesh import redis_kesh, KeshKalitlari
 from sxemalar.kategoriya import (
     AsosiyKategoriyaJavob,
     AsosiyKategoriyaToliq,
@@ -88,6 +89,11 @@ async def kategoriyalar_royxati(
     Barcha kategoriyalar, kichik kategoriyalar va bo'limlar
     ierarxiyasini qaytaradi.
     """
+    kesh_kalit = f"{KeshKalitlari.KATEGORIYA}:royxat"
+    keshlangan = await redis_kesh.olish(kesh_kalit)
+    if keshlangan:
+        return keshlangan
+
     servis = KategoriyaServisi(db)
     kategoriyalar = await servis.asosiy_kategoriyalar_olish()
 
@@ -135,10 +141,12 @@ async def kategoriyalar_royxati(
             kichik_kategoriyalar=kichik_kategoriyalar
         ))
 
-    return KategoriyalarRoyxati(
+    natija = KategoriyalarRoyxati(
         asosiy_kategoriyalar=natija,
         jami_holatlar=jami
     )
+    await redis_kesh.saqlash(kesh_kalit, natija.model_dump(), muddati=300)
+    return natija
 
 
 @router.get(
@@ -152,8 +160,15 @@ async def asosiy_kategoriyalar(
     """
     Faqat asosiy kategoriyalar ro'yxatini qaytaradi.
     """
+    kesh_kalit = f"{KeshKalitlari.KATEGORIYA}:asosiy"
+    keshlangan = await redis_kesh.olish(kesh_kalit)
+    if keshlangan:
+        return keshlangan
+
     servis = KategoriyaServisi(db)
-    return await servis.asosiy_kategoriyalar_olish()
+    natija = await servis.asosiy_kategoriyalar_olish()
+    await redis_kesh.saqlash(kesh_kalit, [k.model_dump() for k in natija], muddati=300)
+    return natija
 
 
 @router.get(
