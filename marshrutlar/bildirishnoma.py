@@ -53,7 +53,7 @@ class EslatmaVaqtlari(BaseModel):
     kunlar: List[int] = [1, 2, 3, 4, 5]  # 1=Dush, 7=Yak
 
 
-class PushObunaSo'rovi(BaseModel):
+class PushObunaSorovi(BaseModel):
     """Push obuna ma'lumotlari."""
     endpoint: str
     keys: dict
@@ -242,7 +242,7 @@ async def vapid_public_key():
 
 @router.post("/push/subscribe", summary="Push obuna yaratish/yangilash")
 async def push_subscribe(
-    malumot: PushObunaSo'rovi,
+    malumot: PushObunaSorovi,
     joriy_foydalanuvchi: Foydalanuvchi = Depends(joriy_foydalanuvchi_olish),
     db: AsyncSession = Depends(sessiya_olish)
 ):
@@ -273,7 +273,7 @@ async def push_subscribe(
 
 @router.post("/push/unsubscribe", summary="Push obunani o'chirish")
 async def push_unsubscribe(
-    malumot: PushObunaSo'rovi,
+    malumot: PushObunaSorovi,
     joriy_foydalanuvchi: Foydalanuvchi = Depends(joriy_foydalanuvchi_olish),
     db: AsyncSession = Depends(sessiya_olish)
 ):
