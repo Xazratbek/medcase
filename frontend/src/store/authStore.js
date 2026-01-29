@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { authAPI, userAPI } from '../utils/api'
+import { getGoogleIdToken } from '../utils/googleAuth'
 import toast from 'react-hot-toast'
 
 export const useAuthStore = create((set, get) => ({
@@ -59,6 +60,37 @@ export const useAuthStore = create((set, get) => ({
       return { success: true, user, isAdmin }
     } catch (error) {
       const message = error.response?.data?.detail || error.response?.data?.xato || "Kirish muvaffaqiyatsiz"
+      toast.error(message)
+      return { success: false, error: message }
+    }
+  },
+
+  // Google orqali kirish
+  googleLogin: async (tokenOverride = null) => {
+    try {
+      const token = tokenOverride || await getGoogleIdToken()
+      const response = await authAPI.googleLogin({ provayder: 'google', token })
+      const data = response.data.malumot || response.data
+      const { kirish_tokeni, yangilash_tokeni, foydalanuvchi } = data
+
+      localStorage.setItem('access_token', kirish_tokeni)
+      localStorage.setItem('refresh_token', yangilash_tokeni)
+
+      let user = foydalanuvchi
+      if (!user) {
+        const profileRes = await userAPI.getProfile()
+        user = profileRes.data.malumot || profileRes.data
+      }
+
+      set({ user, isAuthenticated: true })
+      toast.success(`Xush kelibsiz, ${user.ism || 'foydalanuvchi'}!`)
+
+      const adminRoles = ['admin', 'ADMIN', 'super_admin', 'SUPER_ADMIN']
+      const isAdmin = adminRoles.includes(user?.rol)
+
+      return { success: true, user, isAdmin }
+    } catch (error) {
+      const message = error.response?.data?.detail || error.message || 'Google kirish muvaffaqiyatsiz'
       toast.error(message)
       return { success: false, error: message }
     }

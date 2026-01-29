@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
@@ -12,6 +12,7 @@ import {
   HiOutlineAcademicCap
 } from 'react-icons/hi'
 import { FcGoogle } from 'react-icons/fc'
+import { initGoogleOneTap } from '../../utils/googleAuth'
 
 const roles = [
   { value: 'talaba', label: 'Talaba', icon: '🎓' },
@@ -22,8 +23,10 @@ const roles = [
 
 export default function Register() {
   const navigate = useNavigate()
-  const { register } = useAuthStore()
+  const { register, googleLogin } = useAuthStore()
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const googleBtnRef = useRef(null)
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
@@ -44,6 +47,44 @@ export default function Register() {
       /[0-9]/.test(password)
     )
   }
+
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return
+    setGoogleLoading(true)
+    const result = await googleLogin()
+    if (result.success) {
+      if (result.isAdmin) {
+        navigate('/admin')
+      } else {
+        navigate('/boshqaruv')
+      }
+    }
+    setGoogleLoading(false)
+  }
+
+  useEffect(() => {
+    let active = true
+    initGoogleOneTap({
+      buttonElement: googleBtnRef.current,
+      onToken: async (token) => {
+        if (!active) return
+        setGoogleLoading(true)
+        const result = await googleLogin(token)
+        if (result.success) {
+          if (result.isAdmin) {
+            navigate('/admin')
+          } else {
+            navigate('/boshqaruv')
+          }
+        }
+        setGoogleLoading(false)
+      },
+      uxMode: 'popup'
+    }).catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [googleLogin, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -358,14 +399,20 @@ export default function Register() {
             </div>
 
             {/* Google */}
+            <div className="flex justify-center">
+              <div ref={googleBtnRef} />
+            </div>
+
             <button
               type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
               className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl
                          bg-white/5 border border-white/10 hover:bg-white/10
                          transition-all duration-200"
             >
               <FcGoogle className="w-5 h-5" />
-              <span>Google bilan ro'yxatdan o'tish</span>
+              <span>{googleLoading ? "Google ulanmoqda..." : "Google bilan ro'yxatdan o'tish"}</span>
             </button>
           </>
         )}

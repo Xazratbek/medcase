@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sozlamalar.malumotlar_bazasi import sessiya_olish
 from servislar.foydalanuvchi_servisi import FoydalanuvchiServisi
 from servislar.autentifikatsiya_servisi import AutentifikatsiyaServisi
+from servislar.oauth_servisi import OAuthServisi
 from sxemalar.foydalanuvchi import (
     FoydalanuvchiYaratish,
     FoydalanuvchiKirish,
@@ -15,7 +16,8 @@ from sxemalar.foydalanuvchi import (
     TokenJavob,
     TokenYangilash,
     ParolOzgartirish,
-    ParolTiklash
+    ParolTiklash,
+    OAuthKirish
 )
 from sxemalar.asosiy import MuvaffaqiyatJavob, XatoJavob
 from middleware.autentifikatsiya import joriy_foydalanuvchi_olish
@@ -121,6 +123,44 @@ async def kirish(
     
     token = await auth_servis.kirish(foydalanuvchi, qurilma_malumoti)
     return token
+
+
+@router.post(
+    "/oauth/google",
+    response_model=TokenJavob,
+    summary="Google orqali kirish"
+)
+async def google_kirish(
+    malumot: OAuthKirish,
+    request: Request,
+    db: AsyncSession = Depends(sessiya_olish)
+):
+    """
+    Google ID token yordamida kirish.
+    - **provayder**: google
+    - **token**: Google ID token
+    """
+    if malumot.provayder.lower() != "google":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Noto'g'ri OAuth provayder"
+        )
+
+    servis = OAuthServisi(db)
+    qurilma_malumoti = {
+        "ip_manzil": request.client.host if request.client else None,
+        "qurilma_turi": request.headers.get("X-Device-Type"),
+        "brauzer": request.headers.get("User-Agent")
+    }
+
+    try:
+        token = await servis.google_kirish(malumot.token, qurilma_malumoti=qurilma_malumoti)
+        return token
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
 
 
 @router.post(

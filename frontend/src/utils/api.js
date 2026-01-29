@@ -65,6 +65,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (data) => api.post('/autentifikatsiya/kirish', data),
   register: (data) => api.post('/autentifikatsiya/royxatdan-otish', data),
+  googleLogin: (data) => api.post('/autentifikatsiya/oauth/google', data),
   logout: () => api.post('/autentifikatsiya/chiqish'),
   refreshToken: (data) => api.post('/autentifikatsiya/token-yangilash', data),
   forgotPassword: (email) => api.post('/autentifikatsiya/parolni-tiklash', { email }),
