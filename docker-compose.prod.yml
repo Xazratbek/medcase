@@ -1,0 +1,51 @@
+# MedCase Pro - VPS production (IP-only)
+
+version: '3.8'
+
+services:
+  ilova:
+    build: .
+    container_name: medcase_ilova
+    env_file:
+      - .env
+    environment:
+      - MUHIT=ishlab_chiqarish
+      - DEBUG=False
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: medcase_redis
+    volumes:
+      - redis_malumotlar:/data
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: medcase_nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - ilova
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+
+volumes:
+  redis_malumotlar:
+
+networks:
+  medcase_tarmoq:
+    driver: bridge

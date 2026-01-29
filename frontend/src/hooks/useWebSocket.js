@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/v1/ws'
+const getDefaultWsUrl = () => {
+  if (typeof window === 'undefined') return 'ws://localhost:8000/api/v1/ws'
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${protocol}://${window.location.host}/api/v1/ws`
+}
+
+const WS_URL = import.meta.env.VITE_WS_URL || getDefaultWsUrl()
 
 export const useWebSocket = () => {
   const [isConnected, setIsConnected] = useState(false)
