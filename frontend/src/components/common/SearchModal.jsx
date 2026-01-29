@@ -12,6 +12,7 @@ import {
 } from 'react-icons/hi'
 import { useDebounce } from '../../hooks'
 import api from '../../utils/api'
+import { formatQiyinlik } from '../../utils/format'
 
 export default function SearchModal({ isOpen, onClose }) {
   const navigate = useNavigate()
@@ -313,7 +314,7 @@ export default function SearchModal({ isOpen, onClose }) {
                               item.qiyinlik === 'oson' ? 'text-green-400' :
                               item.qiyinlik === 'orta' ? 'text-yellow-400' : 'text-red-400'
                             }`}>
-                              {item.qiyinlik}
+                              {formatQiyinlik(item.qiyinlik)}
                             </span>
                           )}
                         </div>

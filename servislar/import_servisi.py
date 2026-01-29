@@ -188,8 +188,9 @@ class ImportServisi:
                 qiyinlik = "ortacha"
                 if diff:
                     diff_lower = str(diff).lower().strip()
-                    if diff_lower in self.QIYINLIK_MAP:
-                        qiyinlik = self.QIYINLIK_MAP[diff_lower].value  # Enum value (string)
+                    diff_key = re.sub(r"[^a-z]", "", diff_lower)
+                    if diff_key in self.QIYINLIK_MAP:
+                        qiyinlik = self.QIYINLIK_MAP[diff_key].value  # Enum value (string)
                     else:
                         self.ogohlantirishlar.append({
                             "qator": row_idx,
@@ -582,21 +583,21 @@ class ImportServisi:
                     WHERE holatlar.bolim_id = bolimlar.id 
                     AND holatlar.faol = true 
                     AND holatlar.chop_etilgan = true
-                    AND holatlar.qiyinlik = 'oson'
+                    AND lower(holatlar.qiyinlik::text) = 'oson'
                 ),
                 ortacha_holatlar = (
                     SELECT COUNT(*) FROM holatlar 
                     WHERE holatlar.bolim_id = bolimlar.id 
                     AND holatlar.faol = true 
                     AND holatlar.chop_etilgan = true
-                    AND holatlar.qiyinlik = 'ortacha'
+                    AND lower(holatlar.qiyinlik::text) = 'ortacha'
                 ),
                 qiyin_holatlar = (
                     SELECT COUNT(*) FROM holatlar 
                     WHERE holatlar.bolim_id = bolimlar.id 
                     AND holatlar.faol = true 
                     AND holatlar.chop_etilgan = true
-                    AND holatlar.qiyinlik = 'qiyin'
+                    AND lower(holatlar.qiyinlik::text) = 'qiyin'
                 )
         """
         await self.db.execute(text(bolimlar_sorov))

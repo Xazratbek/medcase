@@ -129,6 +129,25 @@ class RedisKesh:
         except Exception as xato:
             logger.error(f"Redis oshirish xatosi: {xato}")
             return 0
+
+    async def oshirish_va_muddat(
+        self,
+        kalit: str,
+        muddati: int,
+        qiymat: int = 1
+    ) -> int:
+        """Raqamli qiymatni oshiradi va birinchi oshirishda TTL beradi."""
+        if self._redis is None:
+            await self.ulanish()
+
+        try:
+            yangi_qiymat = await self._redis.incrby(kalit, qiymat)
+            if yangi_qiymat == qiymat:
+                await self._redis.expire(kalit, muddati)
+            return yangi_qiymat
+        except Exception as xato:
+            logger.error(f"Redis oshirish/muddat xatosi: {xato}")
+            return 0
     
     async def mavjud(self, kalit: str) -> bool:
         """Kalit mavjudligini tekshiradi."""

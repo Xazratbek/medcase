@@ -217,6 +217,14 @@ class GamifikatsiyaServisi:
             self.db.add(reyting)
         
         await self.db.flush()
+
+        # Real-time reyting yangilanishi
+        try:
+            from servislar.websocket_servisi import reyting_yangilash_yuborish
+            royxat, _ = await self.reyting_olish(turi=turi, sahifa=1, hajm=50)
+            await reyting_yangilash_yuborish(royxat, royxat[:3])
+        except Exception:
+            pass
     
     async def reyting_olish(
         self,

@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, Integer
 import io
 import json
 
@@ -30,8 +30,10 @@ try:
 except ImportError:
     pass
 
-from modellar.rivojlanish import FoydalanuvchiRivojlanishi, HolatUrinishi
+from modellar.rivojlanish import FoydalanuvchiRivojlanishi, HolatUrinishi, KunlikStatistika
 from modellar.foydalanuvchi import Foydalanuvchi
+from modellar.holat import Holat
+from modellar.kategoriya import Bolim, KichikKategoriya, AsosiyKategoriya
 
 
 class ExportServisi:
@@ -288,6 +290,67 @@ class ExportServisi:
                 'daraja': rivojlanish.daraja or 1,
             }
 
+        # Kategoriya bo'yicha statistika
+        kategoriya_filtrlar = [HolatUrinishi.foydalanuvchi_id == foydalanuvchi_id]
+        if boshlangich_sana:
+            kategoriya_filtrlar.append(HolatUrinishi.yaratilgan_vaqt >= boshlangich_sana)
+        if tugash_sana:
+            kategoriya_filtrlar.append(HolatUrinishi.yaratilgan_vaqt <= tugash_sana)
+
+        kat_sorov = select(
+            AsosiyKategoriya.nomi.label("nomi"),
+            func.count(HolatUrinishi.id).label("jami"),
+            func.sum(func.cast(HolatUrinishi.togri, Integer)).label("togri")
+        ).select_from(HolatUrinishi).join(
+            Holat, HolatUrinishi.holat_id == Holat.id
+        ).join(
+            Bolim, Holat.bolim_id == Bolim.id
+        ).join(
+            KichikKategoriya, Bolim.kichik_kategoriya_id == KichikKategoriya.id
+        ).join(
+            AsosiyKategoriya, KichikKategoriya.asosiy_kategoriya_id == AsosiyKategoriya.id
+        ).where(
+            and_(*kategoriya_filtrlar)
+        ).group_by(
+            AsosiyKategoriya.nomi
+        ).order_by(AsosiyKategoriya.nomi)
+
+        kat_natija = await self.db.execute(kat_sorov)
+        kategoriya_statistika = []
+        for row in kat_natija.all():
+            jami = row.jami or 0
+            togri = row.togri or 0
+            aniqlik = (togri / jami * 100) if jami > 0 else 0
+            kategoriya_statistika.append({
+                "nomi": row.nomi,
+                "yechilgan": jami,
+                "togri": togri,
+                "aniqlik": round(aniqlik, 1)
+            })
+
+        # Kunlik statistika
+        kunlik_filtrlar = [KunlikStatistika.foydalanuvchi_id == foydalanuvchi_id]
+        if boshlangich_sana:
+            kunlik_filtrlar.append(KunlikStatistika.sana >= boshlangich_sana.date())
+        if tugash_sana:
+            kunlik_filtrlar.append(KunlikStatistika.sana <= tugash_sana.date())
+
+        kun_sorov = select(KunlikStatistika).where(
+            and_(*kunlik_filtrlar)
+        ).order_by(KunlikStatistika.sana.asc())
+        kun_natija = await self.db.execute(kun_sorov)
+        kunlik_statistika = []
+        for kun in kun_natija.scalars().all():
+            jami = kun.yechilgan_holatlar or 0
+            togri = kun.togri_javoblar or 0
+            aniqlik = (togri / jami * 100) if jami > 0 else 0
+            kunlik_statistika.append({
+                "sana": kun.sana.isoformat(),
+                "yechilgan": jami,
+                "togri": togri,
+                "aniqlik": round(aniqlik, 1)
+            })
+
         return {
             'foydalanuvchi': {
                 'id': str(foydalanuvchi.id),
@@ -296,6 +359,6 @@ class ExportServisi:
             },
             'davr': davr,
             'statistika': statistika,
-            'kategoriya_statistika': [],  # TODO: kategoriya bo'yicha statistika
-            'kunlik_statistika': []  # TODO: kunlik statistika
+            'kategoriya_statistika': kategoriya_statistika,
+            'kunlik_statistika': kunlik_statistika
         }

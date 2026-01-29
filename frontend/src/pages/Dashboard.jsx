@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../store/authStore'
 import { progressAPI, caseAPI, takrorlashAPI, imtihonAPI } from '../utils/api'
+import { formatQiyinlik } from '../utils/format'
 import {
   HiOutlineFire,
   HiOutlineAcademicCap,
@@ -241,7 +242,7 @@ export default function Dashboard() {
                 <p className="text-slate-300 line-clamp-3">{dailyCase.klinik_stsenariy || dailyCase.ssenariy}</p>
                 <div className="flex items-center gap-4">
                   <span className={`case-difficulty ${dailyCase.qiyinlik?.toLowerCase()}`}>
-                    {dailyCase.qiyinlik}
+                    {formatQiyinlik(dailyCase.qiyinlik)}
                   </span>
                   <span className="text-sm text-slate-500">{dailyCase.kichik_kategoriya_nomi || dailyCase.bolim_nomi || dailyCase.kategoriya_nomi}</span>
                 </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { caseAPI } from '../utils/api'
+import { formatQiyinlik } from '../utils/format'
 import {
   HiOutlineBookmark,
   HiOutlineTrash,
@@ -110,7 +111,7 @@ export default function Bookmarks() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={`badge text-xs ${getDifficultyStyle(bookmark.qiyinlik)}`}>
-                    {bookmark.qiyinlik}
+                    {formatQiyinlik(bookmark.qiyinlik)}
                   </span>
                   <span className="text-sm text-slate-500">{bookmark.kategoriya_nomi}</span>
                 </div>

@@ -5,9 +5,27 @@ from pydantic import Field, field_validator
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
+import re
 
 from sxemalar.asosiy import AsosiySchema, IDliSchema, VaqtBelgilariSchema
 from modellar.holat import HolatTuri, QiyinlikDarajasi, MediaTuri
+
+
+def _normalize_qiyinlik_value(value):
+    """Qiyinlik qiymatini turli yozilishlardan enumga normallashtirish."""
+    if value is None:
+        return value
+    if isinstance(value, QiyinlikDarajasi):
+        return value
+    text = str(value).strip().lower()
+    key = re.sub(r"[^a-z]", "", text)
+    if key in {"oson", "basic", "easy"}:
+        return QiyinlikDarajasi.OSON
+    if key in {"ortacha", "orta", "intermediate", "medium"}:
+        return QiyinlikDarajasi.ORTACHA
+    if key in {"qiyin", "advanced", "hard"}:
+        return QiyinlikDarajasi.QIYIN
+    return value
 
 
 # ============== Variant ==============
@@ -109,6 +127,11 @@ class HolatYaratish(AsosiySchema):
         if v.upper() not in ["A", "B", "C", "D"]:
             raise ValueError("To'g'ri javob A, B, C yoki D bo'lishi kerak")
         return v.upper()
+
+    @field_validator("qiyinlik", mode="before")
+    @classmethod
+    def qiyinlik_normallashtirish(cls, v):
+        return _normalize_qiyinlik_value(v)
     
     @field_validator("variantlar")
     @classmethod
@@ -137,6 +160,11 @@ class HolatYangilash(AsosiySchema):
     chop_etilgan: Optional[bool] = None
     tekshirilgan: Optional[bool] = None
     faol: Optional[bool] = None
+
+    @field_validator("qiyinlik", mode="before")
+    @classmethod
+    def qiyinlik_normallashtirish(cls, v):
+        return _normalize_qiyinlik_value(v)
 
 
 class HolatJavob(IDliSchema, VaqtBelgilariSchema):
@@ -197,3 +225,8 @@ class HolatQidirish(AsosiySchema):
     hajm: int = Field(default=20, ge=1, le=100)
     saralash: str = Field(default="yaratilgan_vaqt", description="Saralash maydoni")
     tartib: str = Field(default="desc", description="Tartib (asc/desc)")
+
+    @field_validator("qiyinlik", mode="before")
+    @classmethod
+    def qiyinlik_normallashtirish(cls, v):
+        return _normalize_qiyinlik_value(v)

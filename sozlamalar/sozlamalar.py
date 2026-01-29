@@ -79,8 +79,13 @@ class Sozlamalar(BaseSettings):
     # =====================================================
     # RATE LIMITING
     # =====================================================
+    rate_limit_enabled: bool = Field(default=False, alias="RATE_LIMIT_ENABLED")
     rate_limit_per_minute: int = Field(default=60, alias="RATE_LIMIT_PER_MINUTE")
     rate_limit_per_hour: int = Field(default=1000, alias="RATE_LIMIT_PER_HOUR")
+    abuse_block_enabled: bool = Field(default=True, alias="ABUSE_BLOCK_ENABLED")
+    abuse_block_threshold: int = Field(default=1000, alias="ABUSE_BLOCK_THRESHOLD")
+    abuse_block_window_seconds: int = Field(default=3600, alias="ABUSE_BLOCK_WINDOW_SECONDS")
+    abuse_block_duration_seconds: int = Field(default=36000, alias="ABUSE_BLOCK_DURATION_SECONDS")
     
     # =====================================================
     # CORS

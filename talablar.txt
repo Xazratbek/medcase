@@ -53,6 +53,7 @@ ujson==5.9.0
 aiofiles==23.2.1
 Pillow>=10.2.0
 openpyxl==3.1.5
+reportlab==4.2.0
 
 # Rate limiting
 slowapi==0.1.9

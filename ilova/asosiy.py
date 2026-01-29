@@ -16,6 +16,8 @@ from sozlamalar.malumotlar_bazasi import malumotlar_bazasi
 from sozlamalar.redis_kesh import redis_kesh
 from middleware.rate_limiter import rate_limiter, rate_limit_xato_ishlovchi
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+import hashlib
 
 # Logger sozlash
 logging.basicConfig(
@@ -86,9 +88,55 @@ def ilova_yaratish() -> FastAPI:
     # GZip siqish (javoblar uchun)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # Rate Limiter
-    app.state.limiter = rate_limiter
-    app.add_exception_handler(RateLimitExceeded, rate_limit_xato_ishlovchi)
+    # Anti-abuse (bir xil so'rovlarni ko'p yuborishni bloklash)
+    @app.middleware("http")
+    async def abuse_himoya_middleware(request: Request, call_next):
+        if not sozlamalar.abuse_block_enabled:
+            return await call_next(request)
+
+        ip = get_remote_address(request)
+        if not ip:
+            return await call_next(request)
+
+        block_key = f"abuse:block:{ip}"
+        if await redis_kesh.mavjud(block_key):
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "muvaffaqiyat": False,
+                    "xato": "Ko'p takroriy so'rovlar. Vaqtinchalik bloklandi",
+                    "xato_kodi": "ABUSE_BLOCKED"
+                }
+            )
+
+        signature = f"{request.method}:{request.url.path}?{request.url.query}"
+        sig_hash = hashlib.md5(signature.encode()).hexdigest()[:16]
+        count_key = f"abuse:count:{ip}:{sig_hash}"
+        count = await redis_kesh.oshirish_va_muddat(
+            count_key,
+            sozlamalar.abuse_block_window_seconds
+        )
+        if count >= sozlamalar.abuse_block_threshold:
+            await redis_kesh.saqlash(
+                block_key,
+                {"sababi": "takroriy_so'rovlar"},
+                sozlamalar.abuse_block_duration_seconds
+            )
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "muvaffaqiyat": False,
+                    "xato": "Ko'p takroriy so'rovlar. 10 soatga bloklandi",
+                    "xato_kodi": "ABUSE_BLOCKED"
+                }
+            )
+
+        return await call_next(request)
+
+    # Rate Limiter (ixtiyoriy)
+    if sozlamalar.rate_limit_enabled:
+        app.state.limiter = rate_limiter
+        app.add_exception_handler(RateLimitExceeded, rate_limit_xato_ishlovchi)
 
     # ============== So'rov/Javob Middleware ==============
 

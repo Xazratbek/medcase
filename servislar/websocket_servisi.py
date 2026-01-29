@@ -224,3 +224,20 @@ async def daraja_oshdi_yuborish(
         }
     )
     return await websocket_manager.xabar_yuborish(foydalanuvchi_id, xabar)
+
+
+async def streak_yangilash_yuborish(
+    foydalanuvchi_id: str,
+    joriy_streak: int,
+    eng_uzun_streak: int
+) -> bool:
+    """Streak yangilanishi haqida xabar yuboradi."""
+    xabar = xabar_yaratish(
+        turi=XabarTuri.STREAK_YANGILASH,
+        sarlavha="Streak yangilandi 🔥",
+        malumot={
+            "joriy_streak": joriy_streak,
+            "eng_uzun_streak": eng_uzun_streak
+        }
+    )
+    return await websocket_manager.xabar_yuborish(foydalanuvchi_id, xabar)

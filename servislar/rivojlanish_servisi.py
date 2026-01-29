@@ -56,7 +56,7 @@ class RivojlanishServisi:
         self.db.add(urinish)
         
         # Statistikalarni yangilash
-        await self._rivojlanish_yangilash(
+        rivojlanish_ozgarish = await self._rivojlanish_yangilash(
             foydalanuvchi_id, togri, olingan_ball,
             malumot.sarflangan_vaqt, holat.qiyinlik
         )
@@ -80,6 +80,7 @@ class RivojlanishServisi:
         
         # Nishonlarni tekshirish va berish
         yangi_nishon_nomlari = []
+        yangi_nishonlar = []
         try:
             from servislar.gamifikatsiya_servisi import GamifikatsiyaServisi
             gamifikatsiya_servis = GamifikatsiyaServisi(self.db)
@@ -90,6 +91,39 @@ class RivojlanishServisi:
                 yangi_nishon_nomlari = [n.nom for n in yangi_nishonlar]
         except Exception:
             pass  # Nishon xatosi asosiy funksiyaga ta'sir qilmasligi kerak
+
+        # Real-time xabarlar
+        try:
+            from servislar.websocket_servisi import (
+                nishon_yuborish,
+                daraja_oshdi_yuborish,
+                streak_yangilash_yuborish
+            )
+
+            if rivojlanish_ozgarish:
+                if rivojlanish_ozgarish["new_daraja"] != rivojlanish_ozgarish["old_daraja"]:
+                    await daraja_oshdi_yuborish(
+                        str(foydalanuvchi_id),
+                        rivojlanish_ozgarish["new_daraja"],
+                        rivojlanish_ozgarish["old_daraja"]
+                    )
+
+                if rivojlanish_ozgarish["new_joriy_streak"] != rivojlanish_ozgarish["old_joriy_streak"]:
+                    await streak_yangilash_yuborish(
+                        str(foydalanuvchi_id),
+                        rivojlanish_ozgarish["new_joriy_streak"],
+                        rivojlanish_ozgarish["new_eng_uzun_streak"]
+                    )
+
+            for nishon in yangi_nishonlar:
+                await nishon_yuborish(
+                    str(foydalanuvchi_id),
+                    nishon.nom,
+                    nishon.rasm_url,
+                    nishon.ball_qiymati
+                )
+        except Exception:
+            pass
         
         # UrinishJavob schemasi uchun qo'shimcha ma'lumot qaytarish
         # Model atributini o'zgartirib bo'lmaydi, shuning uchun schemada default [] ishlatiladi
@@ -104,7 +138,7 @@ class RivojlanishServisi:
         ball: int,
         vaqt: int,
         qiyinlik: QiyinlikDarajasi
-    ) -> None:
+    ) -> dict:
         """Umumiy rivojlanishni yangilaydi."""
         sorov = select(FoydalanuvchiRivojlanishi).where(
             FoydalanuvchiRivojlanishi.foydalanuvchi_id == foydalanuvchi_id
@@ -135,6 +169,10 @@ class RivojlanishServisi:
             self.db.add(rivojlanish)
             await self.db.flush()
         
+        old_joriy_streak = rivojlanish.joriy_streak or 0
+        old_eng_uzun_streak = rivojlanish.eng_uzun_streak or 0
+        old_daraja = rivojlanish.daraja or 1
+
         rivojlanish.jami_urinishlar = (rivojlanish.jami_urinishlar or 0) + 1
         rivojlanish.jami_vaqt = (rivojlanish.jami_vaqt or 0) + vaqt
         rivojlanish.jami_ball = (rivojlanish.jami_ball or 0) + ball
@@ -189,6 +227,15 @@ class RivojlanishServisi:
         
         # Daraja hisoblash
         rivojlanish.daraja = self._daraja_hisoblash(rivojlanish.jami_ball)
+
+        return {
+            "old_joriy_streak": old_joriy_streak,
+            "old_eng_uzun_streak": old_eng_uzun_streak,
+            "old_daraja": old_daraja,
+            "new_joriy_streak": rivojlanish.joriy_streak or 0,
+            "new_eng_uzun_streak": rivojlanish.eng_uzun_streak or 0,
+            "new_daraja": rivojlanish.daraja or 1
+        }
     
     def _daraja_hisoblash(self, ball: int) -> int:
         """Ball asosida darajani hisoblaydi."""

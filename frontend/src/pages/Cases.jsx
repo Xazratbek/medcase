@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { caseAPI, categoryAPI } from '../utils/api'
+import { formatQiyinlik } from '../utils/format'
 import {
   HiOutlineSearch,
   HiOutlineFilter,
@@ -380,7 +381,7 @@ function CaseCard({ caseItem, getDifficultyStyle }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <span className={`badge ${getDifficultyStyle(caseItem.qiyinlik)} text-xs`}>
-          {caseItem.qiyinlik}
+          {formatQiyinlik(caseItem.qiyinlik)}
         </span>
         <button className="p-2 -m-2 text-slate-500 hover:text-med-400 transition-colors">
           <HiOutlineBookmark className="w-5 h-5" />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { imtihonAPI, categoryAPI } from '../utils/api'
+import { formatQiyinlik } from '../utils/format'
 import toast from 'react-hot-toast'
 import {
   HiOutlineClock,
@@ -328,7 +329,7 @@ function ExamQuestion({ exam, question, onAnswer, onNext, onPrev, onGoTo, onFini
             question.qiyinlik === 'ortacha' ? 'bg-yellow-500/20 text-yellow-400' :
             'bg-red-500/20 text-red-400'
           }`}>
-            {question.qiyinlik?.toUpperCase()}
+            {formatQiyinlik(question.qiyinlik)}
           </span>
         </div>
 

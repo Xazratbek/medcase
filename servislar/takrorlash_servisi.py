@@ -215,13 +215,35 @@ class TakrorlashServisi:
         hafta_natija = await self.db.execute(hafta_sorov)
         ef_natija = await self.db.execute(ef_sorov)
         stat_natija = await self.db.execute(stat_sorov)
-        
+
         jami_takrorlashlar, togri_javoblar = stat_natija.one()
         jami_takrorlashlar = jami_takrorlashlar or 0
         togri_javoblar = togri_javoblar or 0
         
         aniqlik = (togri_javoblar / jami_takrorlashlar * 100) if jami_takrorlashlar > 0 else 0
-        
+
+        # Streak hisoblash (ketma-ket kunlar)
+        sana_sorov = select(
+            func.date(TakrorlashTarixi.yaratilgan_vaqt)
+        ).select_from(TakrorlashTarixi).join(
+            TakrorlashKartasi, TakrorlashTarixi.karta_id == TakrorlashKartasi.id
+        ).where(
+            TakrorlashKartasi.foydalanuvchi_id == foydalanuvchi_id
+        ).group_by(
+            func.date(TakrorlashTarixi.yaratilgan_vaqt)
+        ).order_by(
+            func.date(TakrorlashTarixi.yaratilgan_vaqt).desc()
+        ).limit(400)
+
+        sana_natija = await self.db.execute(sana_sorov)
+        sanalar = {row[0] for row in sana_natija.all() if row[0]}
+
+        streak_kunlar = 0
+        tekshir_sana = bugun
+        while tekshir_sana in sanalar:
+            streak_kunlar += 1
+            tekshir_sana = tekshir_sana - timedelta(days=1)
+
         return {
             "jami_kartalar": jami.scalar() or 0,
             "bugun_takrorlash_kerak": bugun_natija.scalar() or 0,
@@ -230,7 +252,7 @@ class TakrorlashServisi:
             "ortacha_ef": round(ef_natija.scalar() or 2.5, 2),
             "jami_takrorlashlar": jami_takrorlashlar,
             "umumiy_aniqlik": round(aniqlik, 1),
-            "streak_kunlar": 0  # TODO: Streak hisoblash
+            "streak_kunlar": streak_kunlar
         }
     
     async def kartani_oqilgan_qilish(

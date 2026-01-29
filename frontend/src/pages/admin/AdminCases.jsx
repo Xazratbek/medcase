@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../../utils/api'
+import { formatQiyinlik } from '../../utils/format'
 import toast from 'react-hot-toast'
 import {
   HiOutlineDocumentText,
@@ -224,7 +225,7 @@ export default function AdminCases() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-medium truncate">{caseItem.sarlavha}</h3>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getDiffStyle(caseItem.qiyinlik)}`}>
-                          {caseItem.qiyinlik?.toUpperCase() || 'N/A'}
+                          {formatQiyinlik(caseItem.qiyinlik) || 'N/A'}
                         </span>
                         {caseItem.media?.length > 0 && (
                           <HiOutlinePhotograph className="w-4 h-4 text-slate-500 flex-shrink-0" title="Media mavjud" />

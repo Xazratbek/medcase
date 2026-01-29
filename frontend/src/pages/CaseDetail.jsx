@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { caseAPI, takrorlashAPI } from '../utils/api'
+import { formatQiyinlik } from '../utils/format'
 import {
   HiOutlineArrowLeft,
   HiOutlineBookmark,
@@ -222,7 +223,7 @@ export default function CaseDetail() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className={`badge ${getDifficultyStyle(caseData.qiyinlik)}`}>
-              {caseData.qiyinlik}
+              {formatQiyinlik(caseData.qiyinlik)}
             </span>
             <span className="badge-primary">{caseData.kichik_kategoriya_nomi || caseData.bolim_nomi}</span>
             {caseData.turi && (
