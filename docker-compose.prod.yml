@@ -45,7 +45,7 @@ services:
     networks:
       - medcase_tarmoq
     restart: unless-stopped
-    command: celery -A vositalar.celery_app:celery_app worker -l info --uid 1000 --gid 1000
+    command: celery -A vositalar.celery_app:celery_app worker -l info
 
   redis:
     image: redis:7-alpine
