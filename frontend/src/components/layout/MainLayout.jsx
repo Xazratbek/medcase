@@ -47,6 +47,7 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -59,6 +60,7 @@ export default function MainLayout() {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
+        setSearchQuery('')
         setSearchOpen(true)
       }
     }
@@ -306,17 +308,24 @@ export default function MainLayout() {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              {/* Search button */}
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-ocean-700/50 hover:bg-ocean-700 border border-white/5 transition-colors group"
-              >
+              {/* Search input */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-ocean-700/50 hover:bg-ocean-700 border border-white/5 transition-colors group">
                 <HiOutlineSearch className="w-5 h-5 text-slate-400 group-hover:text-white" />
-                <span className="hidden md:inline text-sm text-slate-400 group-hover:text-white">Qidirish...</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setSearchOpen(true)
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Qidirish..."
+                  className="bg-transparent outline-none text-sm text-slate-200 placeholder:text-slate-500 w-28 md:w-48"
+                />
                 <kbd className="hidden md:inline px-1.5 py-0.5 rounded bg-ocean-800 text-xs text-slate-500 border border-white/10">
                   ⌘K
                 </kbd>
-              </button>
+              </div>
 
               {/* Notifications */}
               <NotificationDropdown />
@@ -350,7 +359,11 @@ export default function MainLayout() {
       </div>
 
       {/* Search Modal */}
-      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        initialQuery={searchQuery}
+      />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />

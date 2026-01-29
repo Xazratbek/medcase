@@ -54,8 +54,7 @@ export default function Profile() {
       })
 
       if (result.success || result.data?.muvaffaqiyat) {
-        toast.success("Avatar yangilandi")
-        // Refresh page or update state to show new avatar immediately is handled by store update usually
+        // success toast handled in store
       }
     } catch (error) {
       console.error(error)

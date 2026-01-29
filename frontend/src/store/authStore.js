@@ -113,8 +113,28 @@ export const useAuthStore = create((set, get) => ({
   // Profilni yangilash
   updateProfile: async (data) => {
     try {
-      const response = await userAPI.updateProfile(data)
-      set({ user: response.data.malumot })
+      const baseKeys = ['ism', 'familiya', 'foydalanuvchi_nomi']
+      const baseData = {}
+      const extraData = {}
+
+      Object.entries(data || {}).forEach(([key, value]) => {
+        if (baseKeys.includes(key)) {
+          baseData[key] = value
+        } else {
+          extraData[key] = value
+        }
+      })
+
+      if (Object.keys(baseData).length > 0) {
+        await userAPI.updateProfile(baseData)
+      }
+      if (Object.keys(extraData).length > 0) {
+        await userAPI.updateProfileExtra(extraData)
+      }
+
+      const profileRes = await userAPI.getProfile()
+      const userData = profileRes.data.malumot || profileRes.data
+      set({ user: userData })
       toast.success("Profil yangilandi")
       return { success: true }
     } catch (error) {

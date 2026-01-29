@@ -13,7 +13,7 @@ from sxemalar.asosiy import AsosiySchema, IDliSchema, VaqtBelgilariSchema
 class AsosiyKategoriyaYaratish(AsosiySchema):
     """Asosiy kategoriya yaratish."""
     nomi: str = Field(..., min_length=2, max_length=255, description="Kategoriya nomi")
-    slug: str = Field(..., min_length=2, max_length=255, description="URL slug")
+    slug: Optional[str] = Field(None, min_length=2, max_length=255, description="URL slug")
     tavsif: Optional[str] = Field(None, description="Tavsif")
     rasm_url: Optional[str] = Field(None, max_length=500, description="Rasm URL")
     rang: str = Field(default="#3B82F6", max_length=7, description="Rang (HEX)")
@@ -57,7 +57,7 @@ class KichikKategoriyaYaratish(AsosiySchema):
     """Kichik kategoriya yaratish."""
     asosiy_kategoriya_id: UUID = Field(..., description="Asosiy kategoriya ID")
     nomi: str = Field(..., min_length=2, max_length=255, description="Nomi")
-    slug: str = Field(..., min_length=2, max_length=255, description="URL slug")
+    slug: Optional[str] = Field(None, min_length=2, max_length=255, description="URL slug")
     tavsif: Optional[str] = Field(None, description="Tavsif")
     rasm_url: Optional[str] = Field(None, max_length=500)
     rang: str = Field(default="#10B981", max_length=7)
@@ -103,7 +103,7 @@ class BolimYaratish(AsosiySchema):
     """Bo'lim yaratish."""
     kichik_kategoriya_id: UUID = Field(..., description="Kichik kategoriya ID")
     nomi: str = Field(..., min_length=2, max_length=255, description="Nomi")
-    slug: str = Field(..., min_length=2, max_length=255, description="URL slug")
+    slug: Optional[str] = Field(None, min_length=2, max_length=255, description="URL slug")
     tavsif: Optional[str] = Field(None, description="Tavsif")
     rasm_url: Optional[str] = Field(None, max_length=500)
     rang: str = Field(default="#8B5CF6", max_length=7)

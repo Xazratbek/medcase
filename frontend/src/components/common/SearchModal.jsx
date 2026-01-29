@@ -14,7 +14,7 @@ import { useDebounce } from '../../hooks'
 import api from '../../utils/api'
 import { formatQiyinlik } from '../../utils/format'
 
-export default function SearchModal({ isOpen, onClose }) {
+export default function SearchModal({ isOpen, onClose, initialQuery = '' }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [query, setQuery] = useState('')
@@ -25,6 +25,12 @@ export default function SearchModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('all')
   
   const debouncedQuery = useDebounce(query, 300)
+
+  useEffect(() => {
+    if (isOpen && initialQuery !== query) {
+      setQuery(initialQuery)
+    }
+  }, [isOpen, initialQuery, query])
 
   // Focus input on open
   useEffect(() => {

@@ -15,6 +15,7 @@ from sxemalar.kategoriya import (
     BolimYaratish
 )
 from sozlamalar.redis_kesh import redis_kesh, kesh_dekoratori, KeshKalitlari
+from vositalar.umumiy import slug_yaratish
 
 
 class KategoriyaServisi:
@@ -25,6 +26,57 @@ class KategoriyaServisi:
         self._asosiy = AsosiyServis(AsosiyKategoriya, db)
         self._kichik = AsosiyServis(KichikKategoriya, db)
         self._bolim = AsosiyServis(Bolim, db)
+
+    async def _unikal_slug_asosiy(self, nomi: str, slug: Optional[str] = None) -> str:
+        """Asosiy kategoriya uchun unikal slug yaratadi."""
+        asosiy_slug = (slug or slug_yaratish(nomi)).lower()
+        slug_kandidat = asosiy_slug
+        i = 1
+        while True:
+            sorov = select(func.count(AsosiyKategoriya.id)).where(
+                AsosiyKategoriya.slug == slug_kandidat
+            )
+            natija = await self.db.execute(sorov)
+            if natija.scalar() == 0:
+                return slug_kandidat
+            i += 1
+            slug_kandidat = f"{asosiy_slug}-{i}"
+
+    async def _unikal_slug_kichik(self, asosiy_kategoriya_id: UUID, nomi: str, slug: Optional[str] = None) -> str:
+        """Kichik kategoriya uchun unikal slug yaratadi."""
+        asosiy_slug = (slug or slug_yaratish(nomi)).lower()
+        slug_kandidat = asosiy_slug
+        i = 1
+        while True:
+            sorov = select(func.count(KichikKategoriya.id)).where(
+                and_(
+                    KichikKategoriya.asosiy_kategoriya_id == asosiy_kategoriya_id,
+                    KichikKategoriya.slug == slug_kandidat
+                )
+            )
+            natija = await self.db.execute(sorov)
+            if natija.scalar() == 0:
+                return slug_kandidat
+            i += 1
+            slug_kandidat = f"{asosiy_slug}-{i}"
+
+    async def _unikal_slug_bolim(self, kichik_kategoriya_id: UUID, nomi: str, slug: Optional[str] = None) -> str:
+        """Bo'lim uchun unikal slug yaratadi."""
+        asosiy_slug = (slug or slug_yaratish(nomi)).lower()
+        slug_kandidat = asosiy_slug
+        i = 1
+        while True:
+            sorov = select(func.count(Bolim.id)).where(
+                and_(
+                    Bolim.kichik_kategoriya_id == kichik_kategoriya_id,
+                    Bolim.slug == slug_kandidat
+                )
+            )
+            natija = await self.db.execute(sorov)
+            if natija.scalar() == 0:
+                return slug_kandidat
+            i += 1
+            slug_kandidat = f"{asosiy_slug}-{i}"
     
     # ============== Asosiy Kategoriya ==============
     
@@ -33,7 +85,11 @@ class KategoriyaServisi:
         malumot: AsosiyKategoriyaYaratish
     ) -> AsosiyKategoriya:
         """Asosiy kategoriya yaratadi."""
-        kategoriya = await self._asosiy.yaratish(**malumot.model_dump())
+        slug = await self._unikal_slug_asosiy(malumot.nomi, malumot.slug)
+        kategoriya = await self._asosiy.yaratish(
+            **malumot.model_dump(exclude={"slug"}),
+            slug=slug
+        )
         await redis_kesh.shablon_ochirish(f"{KeshKalitlari.KATEGORIYA}:*")
         return kategoriya
     
@@ -97,7 +153,15 @@ class KategoriyaServisi:
         malumot: KichikKategoriyaYaratish
     ) -> KichikKategoriya:
         """Kichik kategoriya yaratadi."""
-        kategoriya = await self._kichik.yaratish(**malumot.model_dump())
+        slug = await self._unikal_slug_kichik(
+            malumot.asosiy_kategoriya_id,
+            malumot.nomi,
+            malumot.slug
+        )
+        kategoriya = await self._kichik.yaratish(
+            **malumot.model_dump(exclude={"slug"}),
+            slug=slug
+        )
         await redis_kesh.shablon_ochirish(f"{KeshKalitlari.KATEGORIYA}:*")
         return kategoriya
     
@@ -136,7 +200,15 @@ class KategoriyaServisi:
     
     async def bolim_yaratish(self, malumot: BolimYaratish) -> Bolim:
         """Bo'lim yaratadi."""
-        bolim = await self._bolim.yaratish(**malumot.model_dump())
+        slug = await self._unikal_slug_bolim(
+            malumot.kichik_kategoriya_id,
+            malumot.nomi,
+            malumot.slug
+        )
+        bolim = await self._bolim.yaratish(
+            **malumot.model_dump(exclude={"slug"}),
+            slug=slug
+        )
         await redis_kesh.shablon_ochirish(f"{KeshKalitlari.KATEGORIYA}:*")
         
         # Kichik kategoriya holatlar sonini yangilash kerak bo'lsa

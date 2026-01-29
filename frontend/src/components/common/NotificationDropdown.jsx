@@ -252,6 +252,13 @@ export default function NotificationDropdown() {
                   </button>
                 )}
                 <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-colors"
+                  title="Yopish"
+                >
+                  <HiOutlineX className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => {
                     setIsOpen(false)
                     navigate('/sozlamalar')

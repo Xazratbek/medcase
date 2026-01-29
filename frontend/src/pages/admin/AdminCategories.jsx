@@ -91,7 +91,7 @@ export default function AdminCategories() {
           toast.success("Kategoriya yaratildi")
         }
       } else if (modalType === 'subcategory') {
-        const data = { ...formData, kategoriya_id: parentId }
+        const data = { ...formData, asosiy_kategoriya_id: parentId }
         if (editItem) {
           await api.put(`/admin/kategoriya/kichik/${editItem.id}`, data)
           toast.success("Kichik kategoriya yangilandi")
