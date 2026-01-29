@@ -12,6 +12,8 @@ services:
       - MUHIT=ishlab_chiqarish
       - DEBUG=False
       - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - GUNICORN_WORKERS=4
       - GUNICORN_THREADS=2
       - GUNICORN_TIMEOUT=120
@@ -25,6 +27,24 @@ services:
     restart: unless-stopped
     expose:
       - "8000"
+
+  worker:
+    build: .
+    container_name: medcase_worker
+    env_file:
+      - .env
+    environment:
+      - MUHIT=ishlab_chiqarish
+      - DEBUG=False
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - medcase_tarmoq
+    restart: unless-stopped
+    command: celery -A vositalar.celery_app:celery_app worker -l info
 
   redis:
     image: redis:7-alpine
